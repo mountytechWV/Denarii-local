@@ -1,0 +1,46 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(git push *)",
+      "Bash(git push --force *)",
+      "Bash(git reset --hard *)",
+      "PowerShell(git push *)",
+      "PowerShell(git push --force *)",
+      "PowerShell(git reset --hard *)",
+
+      "Bash(vercel *)",
+      "Bash(npx vercel *)",
+      "Bash(npx vercel@*)",
+      "Bash(npx * vercel *)",
+      "PowerShell(vercel *)",
+      "PowerShell(npx vercel *)",
+      "PowerShell(npx vercel@*)",
+      "PowerShell(npx * vercel *)",
+
+      "Bash(supabase *)",
+      "Bash(npx supabase *)",
+      "Bash(npx supabase@*)",
+      "Bash(npx * supabase *)",
+      "PowerShell(supabase *)",
+      "PowerShell(npx supabase *)",
+      "PowerShell(npx supabase@*)",
+      "PowerShell(npx * supabase *)",
+
+      "Read(.env)",
+      "Read(.env.*)",
+
+      "Bash(env)",
+      "Bash(env *)",
+      "Bash(printenv *)",
+      "Bash(set)",
+      "PowerShell(env *)",
+      "PowerShell(printenv *)",
+      "PowerShell(Get-ChildItem env:*)",
+      "PowerShell(Get-ChildItem -Path env:*)",
+      "PowerShell(Get-Item env:*)",
+      "PowerShell(Write-Output *$env:*)",
+      "PowerShell(Write-Host *$env:*)",
+      "PowerShell($env:*)"
+    ]
+  }
+}

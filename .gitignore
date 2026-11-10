@@ -1,0 +1,21 @@
+node_modules/
+dist/
+build/*
+!build/icon.ico
+!build/installer.nsh
+.env
+.env.local
+*.log
+.DS_Store
+Thumbs.db
+*.db
+*.sqlite
+*.sqlite3
+data/
+uploads/
+
+# Distribution archives — not source code
+*.zip
+
+
+.claude/settings.local.json

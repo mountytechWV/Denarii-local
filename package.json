@@ -1,0 +1,95 @@
+{
+  "private": true,
+  "name": "denarii-local",
+  "productName": "Denarii",
+  "version": "1.0.0",
+  "description": "Denarii trading journal - desktop (local) edition",
+  "author": "mountytechWV",
+  "license": "GPL-3.0-or-later",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test tests/**/*.test.js",
+    "test:webull": "node --test tests/webull-sign.test.js tests/webull-readonly.test.js tests/electron-webull-connection.test.js tests/electron-webull-fetch.test.js tests/electron-webull-ipc.test.js tests/webull-engine.test.js tests/webull-mapper.test.js tests/webull-ui.test.js tests/webull-review.test.js",
+    "check:webull": "node scripts/check-webull-readonly.js",
+    "test:cloud-trades": "node --test tests/cloud-trade-writes.test.js",
+    "test:filters": "node --test tests/filter-baseline.test.js tests/filter-bar.test.js",
+    "vendor": "node scripts/vendor.js",
+    "icon": "node scripts/make-icon.js",
+    "test:db": "node --test tests/electron-db.test.js tests/electron-webull-store.test.js",
+    "dist": "electron-builder --win nsis --x64 --publish never"
+  },
+  "devDependencies": {
+    "@fontsource/inter": "5.3.0",
+    "crypto-js": "4.1.1",
+    "dompurify": "3.4.17",
+    "electron": "45.2.3",
+    "electron-builder": "26.18.0",
+    "lightweight-charts": "4.1.1",
+    "marked": "12.0.2",
+    "papaparse": "5.4.1",
+    "plotly.js-dist-min": "2.27.1",
+    "png-to-ico": "3.0.2"
+  },
+  "build": {
+    "appId": "com.mountytechwv.denarii",
+    "productName": "Denarii",
+    "copyright": "Copyright © 2026 mountytechWV",
+    "asar": true,
+    "npmRebuild": false,
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "package.json",
+      "LICENSE",
+      "index.html",
+      "Denarii.js",
+      "Denarii.css",
+      "manifest.json",
+      "favicon.ico",
+      "Logos/**",
+      "js/**",
+      "vendor/**",
+      "electron/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Denarii",
+      "uninstallDisplayName": "Denarii",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "Denarii-Setup-${version}.${ext}",
+      "include": "build/installer.nsh",
+      "license": "LICENSE"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "mountytechWV",
+        "repo": "Denarii-local",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "6.8.11"
+  }
+}
