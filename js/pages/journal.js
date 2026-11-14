@@ -421,6 +421,7 @@
             Autosave.showStatus(_JNL_STATUS_ID, 'failed');
             return false;
         }
+        if (trade.setupType && typeof _pruneDeletedStrategyNames === 'function') _pruneDeletedStrategyNames();
         if (window._jnlSelectedTradeId === trade.id) _jnlLoaded = _committedInputs;
         // Converted rows are now the trade's saved fills: no more undo.
         if (_jnlFillsConverting && window._jnlSelectedTradeId === trade.id

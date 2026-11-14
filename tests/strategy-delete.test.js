@@ -51,7 +51,9 @@ const AUTH_FNS = [
 ];
 const APP_FNS = ['_noteDeletedStrategyName', '_clearDeletedStrategyName', '_strategyDeleteBlocked', '_strategyDeleteDialog',
     '_deleteStrategyFlow', '_runStrategyDelete', 'deleteStrategy', '_refreshAfterStrategyRename', 'normalizeStrategyName',
-    'backfillStrategiesFromExistingTrades', 'getCanonicalStrategies', 'saveCanonicalStrategies', 'getDemoStrategySeedList'];
+    'backfillStrategiesFromExistingTrades', 'getCanonicalStrategies', 'saveCanonicalStrategies', 'getDemoStrategySeedList',
+    '_clearDeletedNamesInUse', '_pruneDeletedStrategyNames', 'duplicateStrategy',
+    '_isSystemStrategy', '_noteConvertedSystemName', '_forgetConvertedSystemName', '_systemSeedNameFor'];
 const VARS = [
     extractVar(AUTH, /var _SHADOW_DOMAINS = \{[\s\S]*?\n\};/, '_SHADOW_DOMAINS'),
     extractVar(AUTH, /var _USER_META_KEYS = \[[\s\S]*?\];/, '_USER_META_KEYS'),
@@ -424,11 +426,34 @@ test('a System strategy is only hidden, never deleted', async () => {
     assert.equal(h.client.writes.filter(w => w.table === 'trades').length, 0);
 });
 
-test('a user strategy sharing a System name cannot be deleted', async () => {
+test('a user strategy sharing a System name can be deleted; the System name is recorded', async () => {
     const t = TABLES();
     t.strategies[0].name = 'support  bounce';
     t.trades.forEach(r => { if (r.setup_type === 'Old') r.setup_type = 'support  bounce'; });
     const h = await loaded(t);
+    assert.equal(await del(h), true);
+    assert.match(h.log.confirms[0], /^2 trades use this strategy\. They will move to No Strategy\./);
+    assert.deepEqual(cloudStrats(h), ['11']);
+    assert.deepEqual(h.g.journalData._convertedSystemStrategyKeys, ['support bounce']);
+});
+
+test('a converted System strategy can be deleted; its trades move to No Strategy', async () => {
+    const t = TABLES();
+    t.strategies[0].id = '1000001';
+    t.strategies[0].name = 'Support Bounce';
+    t.trades.forEach(r => { if (r.setup_type === 'Old') r.setup_type = 'Support Bounce'; });
+    const h = await loaded(t);
+    Object.assign(h.g.journalData.strategies[0], { isDemoSeed: false, convertedFromSystem: true, createdBy: 'me' });
+    assert.equal(h.fns._strategyDeleteBlocked(h.g.journalData.strategies[0]), false);
+    assert.equal(await h.fns._runStrategyDelete(h.g.journalData.strategies[0]), true);
+    assert.match(h.log.confirms[0], /^2 trades use this strategy/);
+    assert.deepEqual(cloudSetups(h), [null, null, 'Other']);
+    assert.deepEqual(h.g.journalData._convertedSystemStrategyKeys, ['support bounce']);
+});
+
+test('an unconverted System strategy is still blocked from deletion', async () => {
+    const h = await loaded(TABLES());
+    Object.assign(h.g.journalData.strategies[0], { isDemoSeed: true, createdBy: 'System' });
     assert.equal(await del(h), false);
     assert.match(h.log.alerts[0], /can't be deleted/);
     assert.equal(h.client.writes.length, 0);
@@ -539,4 +564,40 @@ test('index.html: versions bumped for this change', () => {
     assert.ok(ver('js/auth.js') >= 44);
     assert.ok(ver('js/shared/filter-bar.js') >= 5);
     assert.ok(ver('js/ai-run.js') >= 10);
+});
+
+// ── Stale deletion records (local) ──────────────────────────────────────────
+
+test('duplicate reusing a deleted name clears that deletion record', async () => {
+    const h = await loaded(TABLES());
+    h.g.journalData._deletedStrategyKeys = ['old (copy)', 'gone'];
+    await h.fns.duplicateStrategy(10);
+    assert.deepEqual(stratNames(h), ['Old', 'Other', 'Old (Copy)']);
+    assert.deepEqual(h.g.journalData._deletedStrategyKeys, ['gone']);
+});
+
+test('deletion records: only names of current strategies are removed, and only then is anything saved', async () => {
+    const h = await loaded(TABLES());
+    h.g.journalData._deletedStrategyKeys = ['gone'];
+    assert.equal(h.fns._clearDeletedNamesInUse(), false);
+    const idb = h.log.idb;
+    await h.fns._pruneDeletedStrategyNames();
+    assert.equal(h.log.idb, idb);
+
+    h.g.journalData._deletedStrategyKeys = ['other', 'gone'];
+    await h.fns._pruneDeletedStrategyNames();
+    assert.deepEqual(h.g.journalData._deletedStrategyKeys, ['gone']);
+    assert.equal(h.log.idb, idb + 1);
+});
+
+test('deletion records: the load cleanup runs before the backfill, with no cloud guard', () => {
+    const at = APP.indexOf('if (_clearDeletedNamesInUse()) _migrationDirty = true;');
+    assert.ok(at > 0 && at < APP.indexOf('const _s1 = ensureDemoStrategiesExist();'));
+    assert.doesNotMatch(APP.slice(at - 300, at), /_cloudBaselineReady|cloud_primary/);
+});
+
+test('local code never saves converted System names to a cloud', () => {
+    assert.doesNotMatch(APP, /_saveConvertedSystemStrategyKeysToSupabase/);
+    assert.doesNotMatch(AUTH, /_saveConvertedSystemStrategyKeysToSupabase/);
+    assert.doesNotMatch(APP, /_alertStrategyCloudSave/);
 });

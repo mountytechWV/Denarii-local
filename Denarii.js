@@ -476,6 +476,9 @@
             // Ensures demo strategies and any trade-referenced strategies exist as
             // canonical records, without touching any trade execution fields.
             if (!journalData.strategies) journalData.strategies = [];
+            // Deletion records for names a current strategy uses are stale.
+            // Writes only when one is removed.
+            if (_clearDeletedNamesInUse()) _migrationDirty = true;
             {
                 const _s1 = ensureDemoStrategiesExist();
                 const _s2 = backfillStrategiesFromExistingTrades(journalData.trades || []);
@@ -792,9 +795,12 @@
         let currentStrategyGroups = [];
         let editingStrategyId = null;
         let _seSelectedGroupId = null;
+        // Form at open time: a System strategy saved unchanged stays System.
+        let _seOpenSig = null;
 
         function showAddStrategyModal() {
             editingStrategyId = null;
+            _seOpenSig = null;
             currentStrategyGroups = [];
             _seSelectedGroupId = null;
             document.getElementById('strategy-editor-title').textContent = 'New Strategy';
@@ -813,10 +819,6 @@
         function editStrategy(id) {
             const strategy = journalData.strategies.find(s => String(s.id) === String(id));
             if (!strategy) return;
-            if (strategy.isDemoSeed || strategy.createdBy === 'System') {
-                alert('System strategies are read-only originals. Use Duplicate to create your own editable copy.');
-                return;
-            }
 
             editingStrategyId = id;
             document.getElementById('strategy-editor-title').textContent = 'Edit Strategy';
@@ -839,12 +841,58 @@
                 createdByEl.textContent = strategy.createdBy || 'User';
                 metaEl.style.display = '';
             }
+            const systemNote = document.getElementById('se-system-note');
+            if (systemNote) systemNote.style.display = _isSystemStrategy(strategy) ? '' : 'none';
 
             currentStrategyGroups = JSON.parse(JSON.stringify(strategy.groups || []));
             _seSelectedGroupId = currentStrategyGroups.length ? currentStrategyGroups[0].id : null;
+            _seOpenSig = _seFormSig();
             activateSection('strategy-editor');
             _seRenderAll();
             _seGuardOpen(id);
+        }
+
+        function _isSystemStrategy(s) {
+            return !!(s && (s.isDemoSeed || s.createdBy === 'System'));
+        }
+
+        // Normalized lowercase System names this user has taken over or
+        // deleted. The seed never adds these back.
+        function _noteConvertedSystemName(name) {
+            const key = normalizeStrategyName(name).toLowerCase();
+            if (!key) return false;
+            const keys = journalData._convertedSystemStrategyKeys || [];
+            if (keys.indexOf(key) !== -1) return false;
+            journalData._convertedSystemStrategyKeys = keys.concat(key);
+            return true;
+        }
+
+        function _forgetConvertedSystemName(name) {
+            const key = normalizeStrategyName(name).toLowerCase();
+            const keys = journalData._convertedSystemStrategyKeys || [];
+            journalData._convertedSystemStrategyKeys = keys.filter(k => k !== key);
+        }
+
+        // The System seed this strategy came from: by id, then by name.
+        function _systemSeedNameFor(strategy) {
+            const seeds = getDemoStrategySeedList();
+            const byId = seeds.find(s => String(s.id) === String(strategy.id));
+            if (byId) return byId.name;
+            const key = normalizeStrategyName(strategy.name).toLowerCase();
+            const byName = seeds.find(s => normalizeStrategyName(s.name).toLowerCase() === key);
+            return byName ? byName.name : null;
+        }
+
+        function _strategyTradeCount(name) {
+            const key = normalizeStrategyName(name).toLowerCase();
+            return (journalData.trades || []).filter(t => t.setupType && normalizeStrategyName(t.setupType).toLowerCase() === key).length;
+        }
+
+        function _systemConvertQuestion(count, renamed) {
+            const lead = 'This will become your strategy and will no longer receive System updates.';
+            if (count === 0) return lead + ' Continue?';
+            return lead + ' It is used by ' + count + (count === 1 ? ' trade' : ' trades') + '; ' +
+                (renamed ? 'they will be moved to the new name.' : 'they will stay assigned to it.') + ' Continue?';
         }
 
         // Batch 2: re-sync guard for the open strategy. A re-sync that
@@ -1493,6 +1541,16 @@
 
             const strategyId = editingStrategyId || Date.now();
             const existingStrat = editingStrategyId ? journalData.strategies.find(s => String(s.id) === String(editingStrategyId)) : null;
+
+            // A System strategy becomes the user's own on a real change.
+            const converting = _isSystemStrategy(existingStrat);
+            if (converting) {
+                if (_seFormSig() === _seOpenSig) {
+                    closeStrategyEditor();
+                    return;
+                }
+                if (!confirm(_systemConvertQuestion(_strategyTradeCount(existingStrat.name), existingStrat.name !== rawName))) return;
+            }
             const strategy = {
                 ...(existingStrat || {}),
                 id: strategyId,
@@ -1505,9 +1563,15 @@
                 createdBy: existingStrat ? (existingStrat.createdBy || currentUsername || 'User') : (currentUsername || 'User'),
                 isFavorite: existingStrat ? (existingStrat.isFavorite !== false) : true
             };
+            const systemName = converting ? _systemSeedNameFor(existingStrat) : null;
+            if (converting) {
+                strategy.isDemoSeed = false;
+                strategy.convertedFromSystem = true;
+                strategy.createdBy = currentUsername || 'User';
+            }
 
             if (existingStrat && existingStrat.name !== rawName) {
-                await _renameStrategyFlow(existingStrat, strategy);
+                await _renameStrategyFlow(existingStrat, strategy, systemName);
                 return;
             }
             if (!existingStrat) DenariiFilters.forgetStrategyRename(rawName);
@@ -1534,6 +1598,7 @@
                 var _csRes = await _saveStrategyToSupabase(strategy);
                 if (!_csRes.success) console.warn('[CloudSave] Strategy save failed, falling back to cache.');
             }
+            if (converting && systemName) _noteConvertedSystemName(systemName);
             await saveToIndexedDB();
             closeStrategyEditor();
             updateStrategiesList();
@@ -1543,13 +1608,13 @@
         // ── Strategy rename ─────────────────────────────────────────────────────
 
         // Save stays disabled and re-syncs wait until the rename has finished.
-        async function _renameStrategyFlow(existing, updated) {
+        async function _renameStrategyFlow(existing, updated, systemName) {
             if (window._denariiStrategyRenameRunning) return false;
             window._denariiStrategyRenameRunning = true;
             const saveBtn = document.querySelector('#strategy-form button[type="submit"]');
             if (saveBtn) saveBtn.disabled = true;
             try {
-                return await _runStrategyRename(existing, updated);
+                return await _runStrategyRename(existing, updated, systemName);
             } finally {
                 window._denariiStrategyRenameRunning = false;
                 if (saveBtn) saveBtn.disabled = false;
@@ -1558,10 +1623,10 @@
 
         // journalData stays untouched until the cloud trades have moved, so the
         // backfill and background saves never see a half-finished rename.
-        async function _runStrategyRename(existing, updated) {
+        async function _runStrategyRename(existing, updated, systemName) {
             const oldName = existing.name;
             const newName = updated.name;
-            if (existing.isDemoSeed || existing.createdBy === 'System') {
+            if (!updated.convertedFromSystem && _isSystemStrategy(existing)) {
                 alert('System strategies are read-only originals. Use Duplicate to create your own editable copy.');
                 return false;
             }
@@ -1630,11 +1695,13 @@
 
             const wasDeleted = _clearDeletedStrategyName(newName);
             if (cloud && wasDeleted) await _saveDeletedStrategyKeysToSupabase();
+            const noted = !!systemName && _noteConvertedSystemName(systemName);
             await saveToIndexedDB();
             if (!cloud && _journalDirty) {
                 _revertStrategyNameOnLocal(changes, oldName);
                 journalData.strategies[index] = existing;
                 if (wasDeleted) _noteDeletedStrategyName(newName);
+                if (noted) _forgetConvertedSystemName(systemName);
                 alert('Couldn\'t save the rename. Nothing was changed.');
                 return false;
             }
@@ -1675,8 +1742,32 @@
             return true;
         }
 
-        // A System name comes back with the seed list.
+        // Drops deletion records whose name a current strategy uses. Returns
+        // true only when an entry was removed.
+        function _clearDeletedNamesInUse() {
+            const keys = journalData._deletedStrategyKeys || [];
+            if (keys.length === 0) return false;
+            const live = new Set((journalData.strategies || []).map(s => normalizeStrategyName(s.name).toLowerCase()));
+            const kept = keys.filter(k => !live.has(k));
+            if (kept.length === keys.length) return false;
+            journalData._deletedStrategyKeys = kept;
+            return true;
+        }
+
+        // After a trade is assigned a strategy. Writes only when an entry was removed.
+        async function _pruneDeletedStrategyNames() {
+            try {
+                if (!_clearDeletedNamesInUse()) return;
+                await saveToIndexedDB();
+            } catch (e) {
+                console.warn('[Denarii] Deleted strategy names cleanup failed:', e.message || e);
+            }
+        }
+
+        // A System strategy comes back with the seed list. A converted or
+        // user-owned strategy with a System name can be deleted.
         function _strategyDeleteBlocked(strategy) {
+            if (strategy.convertedFromSystem || !_isSystemStrategy(strategy)) return false;
             const key = normalizeStrategyName(strategy.name).toLowerCase();
             return getDemoStrategySeedList().some(s => normalizeStrategyName(s.name).toLowerCase() === key);
         }
@@ -1717,8 +1808,8 @@
         // journalData stays untouched until the cloud trades have moved.
         async function _runStrategyDelete(strategy) {
             const name = strategy.name;
-            if (strategy.isDemoSeed || strategy.createdBy === 'System' || _strategyDeleteBlocked(strategy)) {
-                alert('"' + name + '" is a System strategy or shares its name with one, so it can\'t be deleted. You can remove it from favorites instead.');
+            if (_isSystemStrategy(strategy) || _strategyDeleteBlocked(strategy)) {
+                alert('"' + name + '" is a System strategy, so it can\'t be deleted. You can remove it from favorites instead.');
                 return false;
             }
 
@@ -1766,6 +1857,8 @@
             }
 
             const changes = _applyStrategyDeleteToLocal(strategy.id, name);
+            const systemName = _systemSeedNameFor(strategy);
+            const notedSystem = !!systemName && _noteConvertedSystemName(systemName);
 
             let message = '';
             if (cloud) {
@@ -1783,6 +1876,7 @@
             await saveToIndexedDB();
             if (!cloud && _journalDirty) {
                 _revertStrategyDeleteOnLocal(changes, name);
+                if (notedSystem) _forgetConvertedSystemName(systemName);
                 alert('Couldn\'t delete this strategy. Nothing was changed.');
                 return false;
             }
@@ -2147,15 +2241,22 @@
             const seedList  = getDemoStrategySeedList();
             const canonical = getCanonicalStrategies();
             const existingMap = {};
-            canonical.forEach(s => { existingMap[normalizeStrategyName(s.name)] = s; });
+            const existingIds = new Set();
+            canonical.forEach(s => {
+                existingMap[normalizeStrategyName(s.name).toLowerCase()] = s;
+                existingIds.add(String(s.id));
+            });
             const deleted = journalData._deletedSystemStrategyKeys || [];
+            // System names the user has taken over or deleted never come back.
+            const converted = journalData._convertedSystemStrategyKeys || [];
 
             let changed = false;
 
             // Add missing System strategies; previously-deleted ones are restored as unfavorited
             const toAdd = seedList.filter(s => {
-                var norm = normalizeStrategyName(s.name);
-                if (existingMap[norm]) return false;
+                var key = normalizeStrategyName(s.name).toLowerCase();
+                if (existingIds.has(String(s.id)) || existingMap[key]) return false;
+                if (converted.indexOf(key) !== -1) return false;
                 return true;
             });
             toAdd.forEach(s => {
@@ -2173,9 +2274,8 @@
             // Patch existing System strategies whose rules are empty or older
             // than the bundled version. User-owned strategies are skipped.
             seedList.forEach(seed => {
-                const norm = normalizeStrategyName(seed.name);
-                const existing = existingMap[norm];
-                if (!existing || !existing.isDemoSeed) return;
+                const existing = canonical.find(s => String(s.id) === String(seed.id));
+                if (!existing || !existing.isDemoSeed || existing.convertedFromSystem) return;
                 var needsPatch = !existing.groups || existing.groups.length === 0 ||
                     (seed.ruleVersion && (!existing.ruleVersion || existing.ruleVersion < seed.ruleVersion));
                 if (needsPatch) {
@@ -2201,7 +2301,7 @@
             if (!Array.isArray(trades) || trades.length === 0) return false;
 
             const canonical = getCanonicalStrategies();
-            const existing  = new Set(canonical.map(s => normalizeStrategyName(s.name)));
+            const existing  = new Set(canonical.map(s => normalizeStrategyName(s.name).toLowerCase()));
             const deleted   = new Set(journalData._deletedStrategyKeys || []);
             const COLORS    = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
             const toAdd     = [];
@@ -2212,8 +2312,9 @@
                 const raw  = t.setupType;
                 if (!raw || typeof raw !== 'string') return;
                 const norm = normalizeStrategyName(raw);
-                if (!norm || existing.has(norm) || seen.has(norm) || deleted.has(norm.toLowerCase())) return;
-                seen.add(norm);
+                const key  = norm.toLowerCase();
+                if (!norm || existing.has(key) || seen.has(key) || deleted.has(key)) return;
+                seen.add(key);
                 toAdd.push({
                     id:          idBase + toAdd.length,
                     name:        raw.trim(),
@@ -2304,7 +2405,7 @@
             return _deleteStrategyFlow(strat);
         }
 
-        function duplicateStrategy(id) {
+        async function duplicateStrategy(id) {
             const original = (journalData.strategies || []).find(s => String(s.id) === String(id));
             if (!original) return;
 
@@ -2341,12 +2442,16 @@
                 isFavorite:  true
             };
 
+            // The copy may reuse a name deleted earlier (e.g. a previous "(Copy)").
+            DenariiFilters.forgetStrategyRename(copyName);
+            _clearDeletedStrategyName(copyName);
+
             if (!journalData.strategies) journalData.strategies = [];
             journalData.strategies.push(copy);
             if (typeof _isCloudPrimarySave === 'function' && _isCloudPrimarySave()) {
                 _saveStrategyToSupabase(copy);
             }
-            saveToIndexedDB();
+            await saveToIndexedDB();
             updateStrategiesList();
             updateStrategyDropdown();
         }
@@ -2441,7 +2546,8 @@
 
                 const isSystem = s.isDemoSeed || s.createdBy === 'System';
                 const starBtn = `<button class="btn btn-small" onclick="toggleStrategyFavorite(${s.id})" title="Remove from favorites" style="background:transparent;border:none;font-size:16px;cursor:pointer;padding:2px 4px;color:#f59e0b;">★</button>`;
-                const editBtn = isSystem ? '' : `<button class="btn btn-small btn-primary" onclick="editStrategy(${s.id})" style="margin-right:6px;">Edit</button>`;
+                // Editing a System strategy converts it to the user's own on save.
+                const editBtn = `<button class="btn btn-small btn-primary" onclick="editStrategy(${s.id})" style="margin-right:6px;">Edit</button>`;
                 const deleteBtn = isSystem ? '' : `<button class="btn btn-small btn-secondary" onclick="deleteStrategy(${s.id})" style="margin-right:6px;">Delete</button>`;
                 const dupBtn = `<button class="btn btn-small btn-secondary" onclick="duplicateStrategy(${s.id})">Duplicate</button>`;
 
@@ -3909,6 +4015,8 @@
                 Autosave.showStatus(_NT_STATUS_ID, 'failed');
                 return false;
             }
+            var _ntSaved = journalData.trades.find(function(t) { return String(t.id) === String(_ntCreatedTradeId); });
+            if (_ntSaved && _ntSaved.setupType) _pruneDeletedStrategyNames();
             if (_ntGen === _ntFormGen && !_ntCreatedSaved) {
                 _ntCreatedSaved = true;
                 if (!opts.explicit) _ntSaveDraft();

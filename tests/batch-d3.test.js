@@ -611,16 +611,17 @@ test('bug: cloud-first kept demo trades also refresh the Dashboard after saving'
     assert.ok(h.calls.dash >= 1);
 });
 
-test('bug: Duplicate / Edit / favorite work when strategy ids came back from the cloud as strings', () => {
+test('bug: Duplicate / Edit / favorite work when strategy ids came back from the cloud as strings', async () => {
     const jd = { strategies: [{ id: '1000001', name: 'Support Bounce', groups: [{ id: 1, rules: [{ id: 2 }] }], createdBy: 'System', isDemoSeed: true }] };
     const saved = [];
-    const box = sandbox([[APP, ['duplicateStrategy', 'toggleStrategyFavorite']]], {
+    const box = sandbox([[APP, ['duplicateStrategy', 'toggleStrategyFavorite', '_clearDeletedStrategyName']]], {
         journalData: jd, currentUsername: 'me',
         normalizeStrategyName: n => String(n || '').trim(),
-        _isCloudPrimarySave: () => true, _saveStrategyToSupabase: s => saved.push(s.name),
+        DenariiFilters: { forgetStrategyRename() {} },
+        _isCloudPrimarySave: () => true, _saveStrategyToSupabase: s => { saved.push(s.name); return { success: true }; },
         saveToIndexedDB() {}, updateStrategiesList() {}, updateStrategyDropdown() {},
     });
-    box.fns.duplicateStrategy(1000001);     // the button passes a number
+    await box.fns.duplicateStrategy(1000001);     // the button passes a number
     assert.deepEqual(jd.strategies.map(s => s.name), ['Support Bounce', 'Support Bounce (Copy)']);
     assert.deepEqual(saved, ['Support Bounce (Copy)']);
     box.fns.toggleStrategyFavorite(1000001);

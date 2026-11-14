@@ -217,7 +217,7 @@ function strategyBox(strategies, editingId) {
         alert: () => { throw new Error('unexpected alert'); },
         document: { getElementById: id => fields[id] || null },
     };
-    const code = extractStrategySubmit() + '\n' + extractFunction(APP, 'normalizeStrategyName');
+    const code = extractStrategySubmit() + '\n' + extractFunction(APP, 'normalizeStrategyName') + '\n' + extractFunction(APP, '_isSystemStrategy');
     const box = sandbox(code, ['_strategySubmit', 'normalizeStrategyName'], vals);
     return { box, log };
 }

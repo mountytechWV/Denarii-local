@@ -51,7 +51,8 @@ const AUTH_FNS = [
     ...D3.D3_FNS,
 ];
 const APP_FNS = ['_runStrategyRename', '_refreshAfterStrategyRename', 'normalizeStrategyName',
-    'backfillStrategiesFromExistingTrades', 'getCanonicalStrategies', 'saveCanonicalStrategies'];
+    'backfillStrategiesFromExistingTrades', 'getCanonicalStrategies', 'saveCanonicalStrategies',
+    '_isSystemStrategy', '_noteConvertedSystemName', '_forgetConvertedSystemName'];
 const VARS = [
     extractVar(AUTH, /var _SHADOW_DOMAINS = \{[\s\S]*?\n\};/, '_SHADOW_DOMAINS'),
     extractVar(AUTH, /var _USER_META_KEYS = \[[\s\S]*?\];/, '_USER_META_KEYS'),
@@ -245,6 +246,52 @@ test('System strategies are refused even if the editor was reached', async () =>
 
 // ── Blocked before anything is written ──────────────────────────────────────
 
+// A System strategy being converted by this save may be renamed.
+const convertRename = (h, name) => {
+    Object.assign(strat(h), { isDemoSeed: true, createdBy: 'System' });
+    const updated = Object.assign(renamed(h, name), { isDemoSeed: false, convertedFromSystem: true, createdBy: 'me' });
+    return h.fns._runStrategyRename(strat(h), updated, 'Support Bounce');
+};
+
+test('converting rename: allowed, trades move, the System name is recorded', async () => {
+    const h = await loaded(TABLES(['Support Bounce']));
+    assert.equal(await convertRename(h, 'My Bounce'), true);
+    assert.deepEqual(cloudSetups(h), ['My Bounce', 'My Bounce', 'Other']);
+    assert.equal(strat(h).name, 'My Bounce');
+    assert.equal(strat(h).isDemoSeed, false);
+    assert.equal(strat(h).convertedFromSystem, true);
+    assert.deepEqual(h.g.journalData._convertedSystemStrategyKeys, ['support bounce']);
+});
+
+test('converting rename reversed by a conflict: the System name is not recorded', async () => {
+    const h = await loaded(TABLES(['Support Bounce']));
+    const from = h.client.from;
+    let hit = false;
+    h.client.from = table => {
+        const b = from(table);
+        const update = b.update;
+        b.update = (p, o) => {
+            if (table === 'trades' && !hit) {
+                hit = true;
+                const row = h.client.tables.strategies.find(s => s.id === '10');
+                row.description = 'edited elsewhere'; row.rev = 7;
+            }
+            return update(p, o);
+        };
+        return b;
+    };
+    assert.equal(await convertRename(h, 'My Bounce'), false);
+    assert.deepEqual(cloudSetups(h), ['Support Bounce', 'Support Bounce', 'Other']);
+    assert.equal(h.g.journalData._convertedSystemStrategyKeys, undefined);
+});
+
+test('a converted strategy can be renamed again', async () => {
+    const h = await loaded(TABLES(['My Bounce']));
+    Object.assign(strat(h), { isDemoSeed: false, convertedFromSystem: true, createdBy: 'me' });
+    assert.equal(await rename(h, 'My Bounce 2'), true);
+    assert.deepEqual(cloudSetups(h), ['My Bounce 2', 'My Bounce 2', 'Other']);
+});
+
 const assertUntouched = h => {
     assert.equal(h.client.writes.length, 0);
     assert.equal(strat(h).name, 'Old');
@@ -311,7 +358,7 @@ test('collision: only the cloud has a trade with the name', async () => {
 
 test('the save form still blocks a name another strategy has', () => {
     assert.match(APP, /A strategy with this name already exists/);
-    assert.ok(APP.indexOf('A strategy with this name already exists') < APP.indexOf('await _renameStrategyFlow(existingStrat, strategy)'));
+    assert.ok(APP.indexOf('A strategy with this name already exists') < APP.indexOf('await _renameStrategyFlow(existingStrat, strategy, systemName)'));
 });
 
 test('a case-only rename of the same strategy is allowed', async () => {
@@ -575,7 +622,7 @@ test('a load with no marker writes nothing (new users and everyone else)', async
 });
 
 test('the save handler sends only a real name change to the rename flow', () => {
-    assert.match(APP, /if \(existingStrat && existingStrat\.name !== rawName\) \{\s*await _renameStrategyFlow\(existingStrat, strategy\);\s*return;/);
+    assert.match(APP, /if \(existingStrat && existingStrat\.name !== rawName\) \{\s*await _renameStrategyFlow\(existingStrat, strategy, systemName\);\s*return;/);
     assert.match(APP, /if \(!existingStrat\) DenariiFilters\.forgetStrategyRename\(rawName\);/);
 });
 
