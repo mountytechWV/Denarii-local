@@ -4,13 +4,15 @@ Denarii is a trading journal for Windows. You log trades (by hand, from a broker
 
 It is a desktop app built with Electron. Everything runs and is stored on your own computer.
 
-## Download and install
+## Installing on Windows
 
-1. Go to the [Releases page](https://github.com/mountytechWV/Denarii-local/releases) and download the latest `Denarii-Setup-<version>.exe`.
-2. Run it. The installer is not code-signed, so Windows SmartScreen may show "Windows protected your PC". Click **More info**, then **Run anyway**.
-3. Accept the license, choose a folder, and finish. Denarii starts when the installer closes.
+1. Open the [latest release](https://github.com/mountytechWV/Denarii-local/releases/latest) and download `Denarii-Setup-<version>.exe` under **Assets**.
+2. If your browser warns that the file isn't commonly downloaded, choose **Keep**.
+3. Run the installer. If Windows shows "Windows protected your PC", click **More info**, then **Run anyway**.
+   - Alternative: right-click the installer, choose **Properties**, check **Unblock**, click **OK**, then run it.
+4. Accept the license, choose a folder, and finish. Denarii starts when the installer closes.
 
-The installed app checks GitHub Releases for new versions and offers to update itself.
+The warnings appear because the installer is not code-signed yet (see [CODE_SIGNING.md](CODE_SIGNING.md)). They only appear on the first install: after that, updates install from inside the app. Do not turn off SmartScreen.
 
 ## Your data
 

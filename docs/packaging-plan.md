@@ -225,3 +225,17 @@ This is the existing logic in `openDatabaseWithDialogs()`; nothing new is needed
 3. **P3 – Version display:** the `denarii-app:info` IPC, the preload `denariiApp`, and the footer reading the version at runtime with a fallback, plus a unit test.
 4. **P4 – Auto-update:** `electron/updater.js`, the `denarii-update:*` IPC and preload, the in-page banner, and the packaged-only guard. Tests that use a mocked autoUpdater to cover silent errors and the banner.
 5. **P5 – Release docs and Test 2:** the manual release checklist (an addition to `docs/`), the SmartScreen note, and running the Test 2 items above, including the 1.0.0 → 1.0.1 update.
+
+## 13. Releasing (GitHub Actions)
+
+Releases are built by `.github/workflows/release.yml`, not on a PC. `npm run dist` still works locally for testing.
+
+1. Bump `version` in package.json (e.g. `1.2.0`), run `npm install` so package-lock.json matches, run `npm test`, and commit.
+2. Push main: `git push origin main`.
+3. Tag and push the tag: `git tag v1.2.0`, then `git push origin v1.2.0`. The tag without the `v` must equal the package.json version, or the workflow fails.
+4. Wait for the **Release** workflow in the Actions tab to finish. It runs the tests and `check:webull`, builds the installer and uploads the exe, the .blockmap and latest.yml to a **draft** release for the tag.
+5. Review the draft release: the three files are there, the names match the version, and the notes are right.
+6. Click **Publish release** (not a pre-release).
+7. Confirm the release is marked **Latest**. electron-updater ignores drafts and pre-releases, so users get the update only once it is published.
+
+To test the workflow without a release, run it by hand (Actions > Release > Run workflow). The three files are kept as a workflow artifact.

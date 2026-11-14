@@ -1,0 +1,155 @@
+# Builds the Windows installer for Denarii.
+#
+# - Push a tag vX.Y.Z (matching package.json "version"): test, build, and
+#   upload Denarii-Setup-X.Y.Z.exe, its .blockmap and latest.yml to a DRAFT
+#   GitHub Release for that tag. Review it and publish it by hand.
+# - Run it by hand (workflow_dispatch): test and build only; the three files
+#   are kept as a workflow artifact. No release is created.
+#
+# Only the built-in GITHUB_TOKEN is used. The build job can only read the
+# repo; only the release job can write (to create the draft release).
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22.14.0'
+          cache: npm
+
+      - name: Read version (and check it matches the tag)
+        id: version
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          echo "package.json version: $version"
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            tag_version="${GITHUB_REF_NAME#v}"
+            if [ "$tag_version" != "$version" ]; then
+              echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $version"
+              exit 1
+            fi
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Check Webull read-only rules
+        run: npm run check:webull
+
+      - name: Build installer
+        # --publish never: electron-builder only builds. It still writes
+        # latest.yml from the publish config in package.json; uploading is
+        # done by the release job below.
+        run: npx electron-builder --win nsis --x64 --publish never
+
+      # ------------------------------------------------------------------
+      # Future: SignPath code signing (after SignPath Foundation approval).
+      #
+      # latest.yml holds the sha512 and size of the installer, and the
+      # .blockmap is computed from the installer's bytes. Signing changes
+      # those bytes, so the published latest.yml and .blockmap must describe
+      # the SIGNED exe or in-app updates fail their checksum. Either:
+      #   a) sign during the build (an electron-builder custom sign hook that
+      #      submits each exe to SignPath), so latest.yml and the blockmap are
+      #      generated from the signed files; or
+      #   b) sign after this step (signpath/github-action-submit-signing-request
+      #      with the unsigned exe as input), then replace the exe in dist/ and
+      #      regenerate its .blockmap and latest.yml (sha512, size) for the
+      #      signed file before the upload step below.
+      # Option (b) only signs the installer; the app exe inside it stays
+      # unsigned unless dist/win-unpacked is signed first and the installer is
+      # rebuilt from it (electron-builder --prepackaged).
+      #
+      # - name: Sign with SignPath
+      #   uses: signpath/github-action-submit-signing-request@<pinned sha>
+      #   with:
+      #     api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+      #     organization-id: <id>
+      #     project-slug: denarii-local
+      #     signing-policy-slug: release-signing
+      #     github-artifact-id: <id of the unsigned upload>
+      #     wait-for-completion: true
+      #     output-artifact-directory: dist-signed
+      # ------------------------------------------------------------------
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: Denarii-Setup-${{ steps.version.outputs.version }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            dist/Denarii-Setup-${{ steps.version.outputs.version }}.exe
+            dist/Denarii-Setup-${{ steps.version.outputs.version }}.exe.blockmap
+            dist/latest.yml
+
+  release:
+    needs: build
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: Denarii-Setup-${{ needs.build.outputs.version }}
+          path: dist
+
+      - name: Upload to draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          files=(
+            "dist/Denarii-Setup-$VERSION.exe"
+            "dist/Denarii-Setup-$VERSION.exe.blockmap"
+            "dist/latest.yml"
+          )
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            is_draft="$(gh release view "$TAG" --json isDraft --jq .isDraft)"
+            if [ "$is_draft" != "true" ]; then
+              echo "::error::Release $TAG is already published; not replacing its files."
+              exit 1
+            fi
+            gh release upload "$TAG" "${files[@]}" --clobber
+          else
+            gh release create "$TAG" "${files[@]}" \
+              --draft \
+              --verify-tag \
+              --title "Denarii $VERSION" \
+              --notes "Download Denarii-Setup-$VERSION.exe under Assets. See the README for install steps."
+          fi
