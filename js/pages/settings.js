@@ -6,6 +6,10 @@
             activateSection('settings');
             // Deactivate sidebar nav items since settings isn't in sidebar
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            // Tags Management has no Settings nav item (it opens from the
+            // sidebar), so opening Settings itself falls back to Profile.
+            const tagsPanel = document.getElementById('settings-tags');
+            if (tagsPanel && tagsPanel.classList.contains('active')) switchSettingsTab('settings-profile');
             loadProfileSettings();
             loadTagsData();
             if (typeof window.renderBrokerAccountsList === 'function') {
@@ -41,6 +45,22 @@
             if (tabId === 'settings-broker-accounts' && typeof window.renderBrokerAccountsList === 'function') {
                 try { window.renderBrokerAccountsList(); } catch (e) { /* ignore */ }
             }
+            applySettingsPageMode();
+        }
+
+        // Tags Management opens from the sidebar as its own page: while the
+        // Tags panel is shown, the Settings nav is hidden (CSS), the header
+        // reads Tags Management, and its sidebar item (data-tab="settings")
+        // stays lit. Any other panel is the normal Settings page.
+        function applySettingsPageMode() {
+            const section = document.getElementById('settings');
+            if (!section) return;
+            const tagsPanel = document.getElementById('settings-tags');
+            const isTags = !!tagsPanel && tagsPanel.classList.contains('active');
+            section.classList.toggle('settings--tags-page', isTags);
+            if (!section.classList.contains('active')) return;
+            if (typeof setWorkspaceHeader === 'function') setWorkspaceHeader(isTags ? 'settings-tags' : 'settings');
+            document.querySelectorAll('.nav-item[data-tab="settings"]').forEach(item => item.classList.toggle('active', isTags));
         }
 
         // ── Profile Settings ──
@@ -1243,109 +1263,41 @@
             return '#7A8BA0';
         }
 
-        function populateCategoryDropdowns() {
+        function populateCategoryDropdowns(keepCat) {
             const allCats = getCategories();
-            const favCats = allCats.filter(c => isCategoryFavorite(c));
 
-            // Tag form dropdown — only show favorited categories
+            // Tag form dropdown: favorited categories, plus the category the form
+            // is opened for and, while the form is open, its current choice. An
+            // unfavorited or unlisted category would otherwise have no option and
+            // the select would fall back to another category (or an empty value).
             const tagSelect = document.getElementById('tag-category-input');
             const currentVal = tagSelect.value;
-            tagSelect.innerHTML = favCats.map(c => '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>').join('');
-            if (currentVal && favCats.includes(currentVal)) tagSelect.value = currentVal;
-
-            // Filter dropdown — show ALL categories (including unfavorited for management)
-            const filterSelect = document.getElementById('tag-filter-category');
-            const filterVal = filterSelect.value;
-            filterSelect.innerHTML = '<option value="All">All</option>' + allCats.map(c => '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>').join('');
-            if (filterVal && (filterVal === 'All' || allCats.includes(filterVal))) filterSelect.value = filterVal;
+            const formCard = document.getElementById('tag-form-card');
+            const formOpen = !!formCard && formCard.style.display !== 'none';
+            const opts = allCats.filter(c => isCategoryFavorite(c));
+            if (typeof keepCat === 'string' && opts.indexOf(keepCat) === -1) opts.push(keepCat);
+            if (formOpen && currentVal && allCats.includes(currentVal) && opts.indexOf(currentVal) === -1) opts.push(currentVal);
+            tagSelect.innerHTML = opts.map(c => '<option value="' + escapeHtml(c) + '">' + escapeHtml(c || 'No category') + '</option>').join('');
+            if (typeof keepCat === 'string') tagSelect.value = keepCat;
+            else if (currentVal && opts.includes(currentVal)) tagSelect.value = currentVal;
         }
 
         function ensureTagsArray() {
             if (!journalData.tags) journalData.tags = [];
         }
 
-        var _tagSortField = 'name';
-        var _tagSortDir = 'asc';
-
-        function setTagSort(field) {
-            if (_tagSortField === field) {
-                _tagSortDir = _tagSortDir === 'asc' ? 'desc' : 'asc';
-            } else {
-                _tagSortField = field;
-                _tagSortDir = 'asc';
-            }
-            renderTagsTable();
-        }
+        // Tags Management view state, in memory only: the expanded category
+        // (one at a time), the category holding the open tag form, and the
+        // categories in render order so row handlers pass an index, not a name.
+        let _tgmOpenCategory = null;
+        let _tgmFormCategory = null;
+        let _tgmCats = [];
 
         function loadTagsData() {
             ensureTagsArray();
             getCategories(); // ensure initialized
             populateCategoryDropdowns();
-            renderTagsTable();
-        }
-
-        function countTagUsage(tagName) {
-            if (!journalData.trades) return 0;
-            return journalData.trades.filter(t => t.tags && t.tags.some(tag => tag.toLowerCase() === tagName.toLowerCase())).length;
-        }
-
-        function renderTagsTable() {
-            ensureTagsArray();
-            const filter = document.getElementById('tag-filter-category').value;
-            const search = (document.getElementById('tag-search-input').value || '').toLowerCase();
-            const tbody = document.getElementById('tags-table-body');
-
-            let tags = journalData.tags;
-            if (filter !== 'All') tags = tags.filter(t => t.category === filter);
-            if (search) tags = tags.filter(t => t.name.toLowerCase().includes(search) || (t.description || '').toLowerCase().includes(search));
-
-            // Update sort indicators
-            ['name','category','used','description'].forEach(function(f) {
-                var el = document.getElementById('tag-sort-' + f);
-                if (el) el.textContent = _tagSortField === f ? (_tagSortDir === 'asc' ? ' ↑' : ' ↓') : '';
-            });
-
-            if (tags.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-secondary);">No tags found. Click "+ Add Tag" to create one.</td></tr>';
-                return;
-            }
-
-            // Pre-compute usage counts for sorting
-            var usageCache = {};
-            tags.forEach(function(tag) { usageCache[tag.id] = countTagUsage(tag.name); });
-
-            // Sort
-            tags = tags.slice().sort(function(a, b) {
-                var va, vb;
-                switch(_tagSortField) {
-                    case 'name':        va = (a.name||'').toLowerCase(); vb = (b.name||'').toLowerCase(); break;
-                    case 'category':    va = (a.category||'').toLowerCase(); vb = (b.category||'').toLowerCase(); break;
-                    case 'used':        va = usageCache[a.id]||0; vb = usageCache[b.id]||0; return _tagSortDir === 'asc' ? va - vb : vb - va;
-                    case 'description': va = (a.description||'').toLowerCase(); vb = (b.description||'').toLowerCase(); break;
-                    default:            va = (a.name||'').toLowerCase(); vb = (b.name||'').toLowerCase();
-                }
-                return _tagSortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
-            });
-
-            tbody.innerHTML = tags.map(tag => {
-                const used = usageCache[tag.id];
-                const color = getTagCategoryColor(tag.category);
-                const isStarterTag = tag.isStarter || (typeof tag.id === 'string' && tag.id.startsWith('tag_starter_'));
-                const isFav = tag.isFavorite !== false;
-                const starIcon = isFav ? '★' : '☆';
-                const starColor = isFav ? '#f59e0b' : 'var(--text-secondary)';
-                const starTitle = isFav ? 'Unfavorite' : 'Favorite';
-                const starBtn = '<button onclick="toggleTagFavorite(\'' + escapeHtml(tag.id) + '\')" title="' + starTitle + '" style="background:transparent;border:none;font-size:16px;cursor:pointer;padding:2px 4px;color:' + starColor + ';">' + starIcon + '</button>';
-                const dimStyle = !isFav ? 'opacity:0.5;' : '';
-                return '<tr style="' + dimStyle + '">' +
-                    '<td style="width:32px;text-align:center;">' + starBtn + '</td>' +
-                    '<td style="font-weight:600;">' + escapeHtml(tag.name) + '</td>' +
-                    '<td><span class="tag-category-dot" style="background:' + color + ';"></span>' + escapeHtml(tag.category) + '</td>' +
-                    '<td>' + used + '</td>' +
-                    '<td style="color:var(--text-secondary);font-size:13px;">' + escapeHtml(tag.description || '') + '</td>' +
-                    '<td style="position:relative;"><button class="tag-actions-btn" onclick="toggleTagMenu(event,\'' + escapeHtml(tag.id) + '\')">⋯</button></td>' +
-                    '</tr>';
-            }).join('');
+            renderCategoryList();
         }
 
         // Tag context menu
@@ -1401,10 +1353,13 @@
             editingTagId = tagId;
             document.getElementById('tag-form-title').textContent = 'Edit Tag';
             document.getElementById('tag-name-input').value = tag.name;
-            populateCategoryDropdowns();
-            document.getElementById('tag-category-input').value = tag.category;
+            populateCategoryDropdowns(tag.category || '');
+            document.getElementById('tag-category-input').value = tag.category || '';
             document.getElementById('tag-desc-input').value = tag.description || '';
             document.getElementById('tag-form-card').style.display = 'block';
+            _tgmOpenCategory = tag.category || '';
+            _tgmFormCategory = tag.category || '';
+            renderCategoryList();
             document.getElementById('tag-name-input').focus();
             _tagGuardOpen(tagId);
         }
@@ -1453,7 +1408,7 @@
                     _saveTagToSupabase(tag);
                 }
                 saveToIndexedDB();
-                renderTagsTable();
+                renderCategoryList();
                 return;
             }
 
@@ -1463,7 +1418,7 @@
                     _deleteTagFromSupabase(tagId);
                 }
                 saveToIndexedDB();
-                renderTagsTable();
+                renderCategoryList();
             }
         }
 
@@ -1476,23 +1431,29 @@
                 _saveTagToSupabase(tag);
             }
             saveToIndexedDB();
-            renderTagsTable();
+            renderCategoryList();
         }
 
-        function showAddTagForm() {
+        function showAddTagForm(cat) {
             editingTagId = null;
+            const cats = getCategories();
+            const target = (typeof cat === 'string' && cats.indexOf(cat) !== -1) ? cat : (cats[0] || 'Setups');
             document.getElementById('tag-form-title').textContent = 'Add New Tag';
             document.getElementById('tag-name-input').value = '';
-            populateCategoryDropdowns();
-            document.getElementById('tag-category-input').value = getCategories()[0] || 'Setups';
+            populateCategoryDropdowns(target);
+            document.getElementById('tag-category-input').value = target;
             document.getElementById('tag-desc-input').value = '';
             document.getElementById('tag-form-card').style.display = 'block';
+            _tgmOpenCategory = target;
+            _tgmFormCategory = target;
+            renderCategoryList();
             document.getElementById('tag-name-input').focus();
         }
 
         function cancelTagForm() {
             document.getElementById('tag-form-card').style.display = 'none';
             editingTagId = null;
+            _tgmFormCategory = null;
             if (typeof _editorGuardClose === 'function') _editorGuardClose('tag-editor');
         }
 
@@ -1550,14 +1511,14 @@
             await saveToIndexedDB();
             cancelTagForm();
 
-            // Reset filter to "All" so the saved tag is always visible regardless of
-            // which category was active before — this prevents the table from appearing
-            // unchanged after save when the tag belongs to a different filtered category.
-            document.getElementById('tag-filter-category').value = 'All';
-            document.getElementById('tag-search-input').value = '';
-            renderTagsTable();
+            // Clear the search and open the saved tag's category so the tag is
+            // always visible, wherever it was saved to.
+            const searchEl = document.getElementById('tag-search-input');
+            if (searchEl) searchEl.value = '';
+            _tgmOpenCategory = category;
+            renderCategoryList();
 
-            // Confirm success with a brief message above the table
+            // Confirm success with a brief message above the categories
             const saveMsg = document.getElementById('tag-save-msg');
             if (saveMsg) {
                 const action = wasEditing ? 'updated' : 'saved';
@@ -1569,62 +1530,141 @@
 
         let editingCategoryName = null;
 
-        function openCategoryManager() {
-            document.getElementById('category-manage-card').style.display = 'block';
-            renderCategoryList();
-        }
-
-        function closeCategoryManager() {
-            editingCategoryName = null;
-            document.getElementById('category-manage-card').style.display = 'none';
-        }
-
+        // Tags Management: one row per category; the open category (or, while
+        // searching, every category with a matching tag) lists its tags below.
         function renderCategoryList() {
-            const cats = getCategories();
+            ensureTagsArray();
             const listEl = document.getElementById('category-list');
+            if (!listEl) return;
 
-            if (cats.length === 0) {
-                listEl.innerHTML = '<p style="color:var(--text-secondary);font-size:13px;">No categories yet.</p>';
-                return;
-            }
+            // Park the tag form before the list is rebuilt so its inputs survive.
+            const formCard = document.getElementById('tag-form-card');
+            const formHome = document.getElementById('tag-form-home');
+            if (formCard && formHome && formCard.parentNode !== formHome) formHome.appendChild(formCard);
 
-            listEl.innerHTML = cats.map((cat) => {
-                const color    = getTagCategoryColor(cat);
-                const tagCount = journalData.tags ? journalData.tags.filter(t => t.category === cat).length : 0;
+            const searchEl = document.getElementById('tag-search-input');
+            const search = ((searchEl && searchEl.value) || '').trim().toLowerCase();
+            const cats = getCategories();
 
-                // Inline edit mode for this row
-                if (editingCategoryName === cat) {
-                    return '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--primary);border-radius:8px;margin-bottom:6px;">' +
-                        '<span class="tag-category-dot" style="background:' + color + ';flex-shrink:0;"></span>' +
-                        '<input id="category-edit-input" type="text" value="' + escapeHtml(cat) + '" ' +
-                            'style="flex:1;min-width:0;padding:4px 8px;font-size:14px;font-weight:600;border:1px solid var(--primary);border-radius:4px;background:var(--bg-primary);color:var(--text-primary);" ' +
-                            'onkeydown="if(event.key===\'Enter\')saveCategoryEdit(\'' + escapeHtml(cat) + '\');if(event.key===\'Escape\')cancelCategoryEdit();">' +
-                        '<button class="btn btn-small btn-primary" onclick="saveCategoryEdit(\'' + escapeHtml(cat) + '\')" style="padding:4px 10px;font-size:12px;flex-shrink:0;">Save</button>' +
-                        '<button class="btn btn-small btn-secondary" onclick="cancelCategoryEdit()" style="padding:4px 10px;font-size:12px;flex-shrink:0;">Cancel</button>' +
-                        '</div>';
-                }
+            // Tags whose category is not in the list (e.g. saved with an empty
+            // category) still get a group so they stay visible and editable.
+            const extra = [];
+            journalData.tags.forEach(t => {
+                const c = t.category || '';
+                if (cats.indexOf(c) === -1 && extra.indexOf(c) === -1) extra.push(c);
+            });
+            _tgmCats = cats.concat(extra);
 
-                const isSys = isSystemCategory(cat);
-                const isFav = isCategoryFavorite(cat);
-                const starHtml = '<button onclick="toggleCategoryFavorite(\'' + escapeHtml(cat) + '\')" title="' + (isFav ? 'Unfavorite' : 'Favorite') + '" style="background:transparent;border:none;font-size:16px;cursor:pointer;padding:2px 4px;color:' + (isFav ? '#f59e0b' : 'var(--text-secondary)') + ';">' + (isFav ? '★' : '☆') + '</button>';
-                const dimStyle = !isFav ? 'opacity:0.5;' : '';
-
-                return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;' + dimStyle + '">' +
-                    '<div style="display:flex;align-items:center;gap:10px;">' +
-                    starHtml +
-                    '<span class="tag-category-dot" style="background:' + color + ';"></span>' +
-                    '<span style="font-weight:600;font-size:14px;">' + escapeHtml(cat) + '</span>' +
-                    '<span style="font-size:11px;color:var(--text-secondary);">' + tagCount + ' tag' + (tagCount !== 1 ? 's' : '') + '</span>' +
-                    '</div>' +
-                    '<button class="tag-actions-btn" onclick="toggleCategoryMenu(event,\'' + escapeHtml(cat) + '\')">⋯</button>' +
-                    '</div>';
+            const matches = t => !search || (t.name || '').toLowerCase().includes(search) || (t.description || '').toLowerCase().includes(search);
+            const html = _tgmCats.map((cat, i) => {
+                const all = journalData.tags.filter(t => (t.category || '') === cat);
+                const shown = all.filter(matches);
+                if (search && !shown.length) return '';
+                const open = search ? true : cat === _tgmOpenCategory;
+                return tagCategoryHtml(cat, i, all.length, shown, open, i >= cats.length);
             }).join('');
+            listEl.innerHTML = html || '<p class="tgm-empty">' + (search ? 'No tags match your search.' : 'No categories yet.') + '</p>';
 
             // Auto-focus the edit input when entering edit mode
             if (editingCategoryName) {
                 const inp = document.getElementById('category-edit-input');
                 if (inp) { inp.focus(); inp.select(); }
             }
+
+            // Put the open tag form back into its category when that category is shown.
+            if (formCard && formCard.style.display !== 'none' && _tgmFormCategory !== null) {
+                const idx = _tgmCats.indexOf(_tgmFormCategory);
+                const slot = idx === -1 ? null : document.getElementById('tgm-form-slot-' + idx);
+                if (slot) slot.appendChild(formCard);
+            }
+        }
+
+        function tagCategoryHtml(cat, i, tagCount, tags, open, isUnlisted) {
+            const color = getTagCategoryColor(cat);
+            const ref = 'tgmCat(' + i + ')';
+            const countHtml = '<span class="tgm-cat-count">' + tagCount + ' tag' + (tagCount !== 1 ? 's' : '') + '</span>';
+            let head;
+            if (!isUnlisted && editingCategoryName === cat) {
+                // Inline rename
+                head = '<div class="tgm-cat-head tgm-cat-head--edit">' +
+                    '<span class="tag-category-dot" style="background:' + color + ';"></span>' +
+                    '<input id="category-edit-input" type="text" value="' + escapeHtml(cat) + '" aria-label="Category name" ' +
+                        'onkeydown="if(event.key===\'Enter\')saveCategoryEdit(' + ref + ');if(event.key===\'Escape\')cancelCategoryEdit();">' +
+                    '<button class="btn btn-small btn-primary" onclick="saveCategoryEdit(' + ref + ')">Save</button>' +
+                    '<button class="btn btn-small btn-secondary" onclick="cancelCategoryEdit()">Cancel</button>' +
+                    '</div>';
+            } else {
+                const isFav = isUnlisted || isCategoryFavorite(cat);
+                const star = isUnlisted
+                    ? '<span class="tgm-star tgm-star--none" aria-hidden="true"></span>'
+                    : '<button class="tgm-star' + (isFav ? ' is-fav' : '') + '" onclick="toggleCategoryFavorite(' + ref + ')" title="' + (isFav ? 'Unfavorite' : 'Favorite') + '" aria-label="' + (isFav ? 'Unfavorite' : 'Favorite') + ' category">' + (isFav ? '★' : '☆') + '</button>';
+                head = '<div class="tgm-cat-head">' + star +
+                    '<button class="tgm-cat-toggle" onclick="tgmToggleCategory(' + i + ')" aria-expanded="' + open + '" aria-controls="tgm-cat-body-' + i + '">' +
+                        '<span class="tgm-chevron" aria-hidden="true"></span>' +
+                        '<span class="tag-category-dot" style="background:' + color + ';"></span>' +
+                        '<span class="tgm-cat-name">' + escapeHtml(cat || 'No category') + '</span>' +
+                        countHtml +
+                    '</button>' +
+                    (isUnlisted ? '' : '<button class="tag-actions-btn" onclick="toggleCategoryMenu(event,' + ref + ')" aria-label="Category actions">⋯</button>') +
+                    '</div>';
+            }
+
+            let body = '';
+            if (open) {
+                const rows = tags.slice().sort((a, b) => (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase())).map(tag => {
+                    const isFav = tag.isFavorite !== false;
+                    const isStarterTag = tag.isStarter || (typeof tag.id === 'string' && tag.id.startsWith('tag_starter_'));
+                    return '<div class="tgm-tag' + (isFav ? '' : ' is-unfav') + '">' +
+                        '<button class="tgm-star' + (isFav ? ' is-fav' : '') + '" onclick="toggleTagFavorite(\'' + escapeHtml(tag.id) + '\')" title="' + (isFav ? 'Unfavorite' : 'Favorite') + '" aria-label="' + (isFav ? 'Unfavorite' : 'Favorite') + ' tag">' + (isFav ? '★' : '☆') + '</button>' +
+                        '<div class="tgm-tag-text">' +
+                            '<span class="tgm-tag-name">' + escapeHtml(tag.name) + '</span>' +
+                            (isStarterTag ? '<span class="tgm-badge" title="System tags can be favorited but not edited or deleted">System</span>' : '') +
+                            (tag.description ? '<span class="tgm-tag-desc">' + escapeHtml(tag.description) + '</span>' : '') +
+                        '</div>' +
+                        '<button class="tag-actions-btn" onclick="toggleTagMenu(event,\'' + escapeHtml(tag.id) + '\')" aria-label="Tag actions">⋯</button>' +
+                        '</div>';
+                }).join('');
+                body = '<div class="tgm-cat-body" id="tgm-cat-body-' + i + '">' +
+                    (rows || '<p class="tgm-empty">No tags in this category yet.</p>') +
+                    (isUnlisted ? '' : '<button class="btn btn-secondary btn-small tgm-add-tag" onclick="showAddTagForm(' + ref + ')">+ Add tag to ' + escapeHtml(cat) + '</button>') +
+                    '<div class="tgm-form-slot" id="tgm-form-slot-' + i + '"></div>' +
+                    '</div>';
+            }
+
+            const isFavCat = isUnlisted || isCategoryFavorite(cat);
+            return '<div class="tgm-cat' + (open ? ' is-open' : '') + (isFavCat ? '' : ' is-unfav') + '">' + head + body + '</div>';
+        }
+
+        function tgmCat(i) {
+            return _tgmCats[i];
+        }
+
+        // Expand or collapse a category. While searching, clicking a category
+        // clears the search and opens just that one.
+        function tgmToggleCategory(i) {
+            const cat = _tgmCats[i];
+            if (cat === undefined) return;
+            const searchEl = document.getElementById('tag-search-input');
+            if (searchEl && searchEl.value.trim()) {
+                searchEl.value = '';
+                _tgmOpenCategory = cat;
+            } else {
+                _tgmOpenCategory = _tgmOpenCategory === cat ? null : cat;
+            }
+            renderCategoryList();
+        }
+
+        function showNewCategoryForm() {
+            document.getElementById('category-new-card').style.display = 'flex';
+            const input = document.getElementById('new-category-input');
+            input.value = '';
+            input.focus();
+        }
+
+        function hideNewCategoryForm() {
+            document.getElementById('category-new-card').style.display = 'none';
+            const msgEl = document.getElementById('category-form-msg');
+            if (msgEl) msgEl.style.display = 'none';
         }
 
         async function toggleCategoryFavorite(catName) {
@@ -1714,13 +1754,12 @@
             editingCategoryName = null;
             await saveToIndexedDB();
 
+            if (_tgmOpenCategory === oldName) _tgmOpenCategory = newName;
+            if (_tgmFormCategory === oldName) _tgmFormCategory = newName;
             renderCategoryList();
-            populateCategoryDropdowns();
-
-            // Keep the category filter in sync if it was showing the old name
-            const filterSel = document.getElementById('tag-filter-category');
-            if (filterSel && filterSel.value === oldName) filterSel.value = newName;
-            renderTagsTable();
+            // An open tag form that pointed at the old name follows the rename.
+            const tagSel = document.getElementById('tag-category-input');
+            populateCategoryDropdowns(tagSel && tagSel.value === oldName ? newName : undefined);
         }
 
         async function deleteCategory(catName) {
@@ -1759,13 +1798,12 @@
 
             await saveToIndexedDB();
 
-            // Reset the category filter if it was showing the deleted category
-            const filterSel = document.getElementById('tag-filter-category');
-            if (filterSel && filterSel.value === catName) filterSel.value = 'All';
-
+            // The open category and tag form follow the tags to "Uncategorized".
+            if (_tgmOpenCategory === catName) _tgmOpenCategory = tagCount > 0 ? 'Uncategorized' : null;
+            if (_tgmFormCategory === catName) _tgmFormCategory = 'Uncategorized';
             renderCategoryList();
-            populateCategoryDropdowns();
-            renderTagsTable();
+            const tagSel = document.getElementById('tag-category-input');
+            populateCategoryDropdowns(tagSel && tagSel.value === catName ? 'Uncategorized' : undefined);
         }
 
         async function addCategory() {
@@ -1787,7 +1825,8 @@
             await saveToIndexedDB();
 
             input.value = '';
-            msgEl.style.display = 'none';
+            hideNewCategoryForm();
+            _tgmOpenCategory = name;
             renderCategoryList();
             populateCategoryDropdowns();
         }
@@ -2040,6 +2079,7 @@
         window.deleteAccountAuthenticated = deleteAccountAuthenticated;
         window.openSettings            = openSettings;
         window.switchSettingsTab       = switchSettingsTab;
+        window.applySettingsPageMode   = applySettingsPageMode;
         window.loadIntegrationsSettings = loadIntegrationsSettings;
         window.loadConflictCopies      = loadConflictCopies;
         window.loadDataSettings        = loadDataSettings;
@@ -2070,10 +2110,9 @@
         window.ensureStarterTags       = ensureStarterTags;
         window.ensureStarterTagsExist  = ensureStarterTags; // alias per spec
         window.getCategories           = getCategories;
+        window.getTagCategoryColor     = getTagCategoryColor;
         window.populateCategoryDropdowns = populateCategoryDropdowns;
         window.loadTagsData            = loadTagsData;
-        window.renderTagsTable         = renderTagsTable;
-        window.setTagSort              = setTagSort;
         window.toggleTagMenu           = toggleTagMenu;
         window.editTag                 = editTag;
         window.deleteTag               = deleteTag;
@@ -2081,9 +2120,11 @@
         window.showAddTagForm          = showAddTagForm;
         window.cancelTagForm           = cancelTagForm;
         window.saveTag                 = saveTag;
-        window.openCategoryManager     = openCategoryManager;
-        window.closeCategoryManager    = closeCategoryManager;
         window.renderCategoryList      = renderCategoryList;
+        window.tgmCat                   = tgmCat;
+        window.tgmToggleCategory        = tgmToggleCategory;
+        window.showNewCategoryForm     = showNewCategoryForm;
+        window.hideNewCategoryForm     = hideNewCategoryForm;
         window.toggleCategoryMenu      = toggleCategoryMenu;
         window.editCategory            = editCategory;
         window.cancelCategoryEdit      = cancelCategoryEdit;

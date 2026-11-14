@@ -2700,7 +2700,13 @@
             },
             settings: {
                 title: 'Settings',
-                subtitle: 'Manage your profile, security, and tags.'
+                subtitle: 'Manage your profile, security, and integrations.'
+            },
+            // Not a section: the Settings section while its Tags panel is shown
+            // (applySettingsPageMode in settings.js).
+            'settings-tags': {
+                title: 'Tags Management',
+                subtitle: 'Organize your tag categories and the tags you use on trades.'
             },
             'ai-library': {
                 title: 'Prompt Library',
@@ -2782,6 +2788,14 @@
             }
         };
 
+        function setWorkspaceHeader(metaKey) {
+            const meta = sectionMeta[metaKey] || { title: 'Denarii', subtitle: '' };
+            const titleEl = document.getElementById('workspace-page-title');
+            const subtitleEl = document.getElementById('workspace-page-subtitle');
+            if (titleEl) titleEl.textContent = meta.title;
+            if (subtitleEl) subtitleEl.textContent = meta.subtitle;
+        }
+
         function activateSection(sectionId) {
             // Leaving New Trade (or clicking it again): a complete trade is
             // saved and the form cleared first; an incomplete one asks Stay /
@@ -2798,11 +2812,9 @@
             if (ws) ws.setAttribute('data-section', sectionId);
             refreshHero();
 
-            const meta = sectionMeta[sectionId] || { title: 'Denarii', subtitle: '' };
-            const titleEl = document.getElementById('workspace-page-title');
-            const subtitleEl = document.getElementById('workspace-page-subtitle');
-            if (titleEl) titleEl.textContent = meta.title;
-            if (subtitleEl) subtitleEl.textContent = meta.subtitle;
+            setWorkspaceHeader(sectionId);
+            // Settings shows as the Tags Management page while its Tags panel is open.
+            if (sectionId === 'settings' && typeof window.applySettingsPageMode === 'function') window.applySettingsPageMode();
 
 
             // Dashboard: apply preferred default view on activation

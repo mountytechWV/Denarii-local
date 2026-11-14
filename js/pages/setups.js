@@ -28,7 +28,8 @@
                 { id:'su11', wid:'top5-setups',          size:'medium' },
                 { id:'su12', wid:'bottom5-setups',       size:'medium' },
                 { id:'su13', wid:'setup-perf-time',      size:'large'  },
-                { id:'su16', wid:'grade-performance',    size:'large'  }
+                { id:'su16', wid:'grade-performance',    size:'large'  },
+                { id:'su17', wid:'tag-usage',            size:'large'  }
             ];
 
             // ── Widget library ─────────────────────────────────
@@ -56,7 +57,8 @@
                 { wid:'setup-contrib',          name:'Strategy P&L Contribution',   desc:'Each strategy\'s share of total P&L',                        cat:'Distribution',  def:'medium' },
                 { wid:'largest-loss-by-setup',  name:'Largest Loss by Strategy',    desc:'Biggest single losing trade per strategy',                   cat:'Risk',          def:'medium' },
                 { wid:'setup-perf-time',        name:'Strategy Performance Over Time', desc:'How key strategies have performed month by month',         cat:'Trends',        def:'large'  },
-                { wid:'grade-performance',      name:'Performance by Grade',     desc:'P&L, win rate, and trade count broken down by strategy execution grade', cat:'Execution', def:'large' }
+                { wid:'grade-performance',      name:'Performance by Grade',     desc:'P&L, win rate, and trade count broken down by strategy execution grade', cat:'Execution', def:'large' },
+                { wid:'tag-usage',              name:'Tag Usage',                desc:'How often each tag is used, with net P&L and win rate per tag', cat:'Tags', def:'large' }
             ];
 
             // ── Help content ───────────────────────────────────
@@ -200,6 +202,13 @@
                     why: 'This helps show whether a strategy\'s edge is stable, improving, or weakening over time.',
                     how: 'Use this to see whether a strategy deserves more confidence, caution, or review.',
                     watch: 'Too many strategies on one chart creates noise. Focus on the most relevant ones.'
+                },
+                'tag-usage': {
+                    title: 'Tag Usage',
+                    what: 'Every tag you have created, with how many trades in the current filtered view carry it, plus the net P&L and win rate of those trades.',
+                    why: 'Tags record mistakes, execution and emotional state. Seeing which ones show up most, and what they cost or earn, points to the habits worth working on.',
+                    how: 'Sort by Used to find your most common tags, or by Net P&L to find the most expensive ones. Use the filter bar to compare periods or accounts.',
+                    watch: 'A trade can carry several tags, so the same P&L is counted under each of its tags. Totals across tags will not add up to your account P&L.'
                 }
             };
 
@@ -405,6 +414,90 @@
                 '</div>';
             }
 
+            // ── Tag usage table ────────────────────────────────
+            // Read-only: counts the already-filtered trades. Trades store tag
+            // names, matched case-insensitively like Tags Management's count.
+            // Sort and "Hide unused" live in memory only, never in journalData.
+            var _tagUsage = { sort: 'used', dir: 'desc', hideUnused: false };
+
+            function buildTagUsage(tags, trades) {
+                var byName = {};
+                trades.forEach(function(t) {
+                    if (!Array.isArray(t.tags)) return;
+                    var p = parseFloat(t.pnl) || 0;
+                    var seen = {};
+                    t.tags.forEach(function(name) {
+                        if (typeof name !== 'string') return;
+                        var key = name.toLowerCase();
+                        if (seen[key]) return;
+                        seen[key] = true;
+                        var m = byName[key] || (byName[key] = { count:0, pnl:0, wins:0 });
+                        m.count++;
+                        m.pnl += p;
+                        if (p > 0) m.wins++;
+                    });
+                });
+                return (tags || []).map(function(tag) {
+                    var m = byName[String(tag.name || '').toLowerCase()];
+                    var count = m ? m.count : 0;
+                    return {
+                        name: tag.name || '', category: tag.category || '', description: tag.description || '',
+                        used: count,
+                        pnl: count ? m.pnl : null,
+                        winRate: count ? m.wins / count * 100 : null
+                    };
+                });
+            }
+
+            function sortTagUsage(rows) {
+                var f = _tagUsage.sort, dir = _tagUsage.dir === 'asc' ? 1 : -1;
+                return rows.slice().sort(function(a, b) {
+                    var va = a[f], vb = b[f], c;
+                    if (f === 'name' || f === 'category' || f === 'description') {
+                        c = dir * String(va).toLowerCase().localeCompare(String(vb).toLowerCase());
+                    } else {
+                        // Unused tags have no P&L or win rate: keep them last either way.
+                        if (va == null || vb == null) c = va == null ? (vb == null ? 0 : 1) : -1;
+                        else c = dir * (va - vb);
+                    }
+                    return c || a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+                });
+            }
+
+            function tagUsageHtml(trades) {
+                var tags = journalData.tags || [];
+                if (!tags.length) return emptyState('No tags yet. Create tags in Tags Management.');
+                var rows = buildTagUsage(tags, trades);
+                if (_tagUsage.hideUnused) rows = rows.filter(function(r){ return r.used > 0; });
+                var colorOf = typeof window.getTagCategoryColor === 'function' ? window.getTagCategoryColor : function(){ return '#7A8BA0'; };
+                function th(col, label) {
+                    var active = _tagUsage.sort === col;
+                    var arrow = active ? (_tagUsage.dir === 'asc' ? ' ↑' : ' ↓') : '';
+                    return '<th class="'+(active?'su-th-active':'')+'" onclick="setSetupsTagSort(\''+col+'\')" title="Sort by '+label+'">'+label+arrow+'</th>';
+                }
+                var ctrl = '<label class="su-tu-ctrl"><input type="checkbox"'+(_tagUsage.hideUnused?' checked':'')+' onchange="setSetupsTagHideUnused(this.checked)"> Hide unused</label>';
+                if (!rows.length) return ctrl + emptyState('No tags are used on trades in the current view.');
+                var body = sortTagUsage(rows).map(function(r) {
+                    return '<tr'+(r.used ? '' : ' class="su-tu-unused"')+'>' +
+                        '<td title="'+esc(r.name)+'">'+esc(r.name)+'</td>' +
+                        '<td title="'+esc(r.category)+'"><span class="tag-category-dot" style="background:'+esc(colorOf(r.category))+';"></span>'+esc(r.category)+'</td>' +
+                        '<td>'+r.used+'</td>' +
+                        '<td class="su-tu-pnl '+(r.pnl == null ? 'su-lb-neu' : suPnlCls(r.pnl))+'">'+(r.pnl == null ? '—' : fmt$(r.pnl))+'</td>' +
+                        '<td>'+(r.winRate == null ? '—' : fmtPct(r.winRate))+'</td>' +
+                        '<td title="'+esc(r.description)+'">'+esc(r.description)+'</td>' +
+                    '</tr>';
+                }).join('');
+                return ctrl + '<div class="su-leaderboard su-tag-usage">' +
+                    '<table>' +
+                    '<thead><tr>' +
+                        th('name','Tag') + th('category','Category') + th('used','Used') +
+                        th('pnl','Net P&L') + th('winRate','Win Rate') + th('description','Description') +
+                    '</tr></thead>' +
+                    '<tbody>'+body+'</tbody>' +
+                    '</table>' +
+                '</div>';
+            }
+
             // ── RENDERERS ──────────────────────────────────────
             var RENDERERS = {
 
@@ -594,6 +687,9 @@
                         '</table></div>';
 
                     return widgetHtml(id, 'Performance by Grade', html, sz);
+                },
+                'tag-usage': function(id, ranked, trades, sz) {
+                    return widgetHtml(id, 'Tag Usage', tagUsageHtml(trades), sz, 'tag-usage');
                 }
             };
 
@@ -968,6 +1064,22 @@
                 document.querySelectorAll('.snap-pill[data-minsample]').forEach(function(b){
                     b.classList.toggle('active', parseInt(b.dataset.minsample,10) === n);
                 });
+                renderSetups();
+            };
+
+            window.setSetupsTagSort = function(field) {
+                if (_tagUsage.sort === field) {
+                    _tagUsage.dir = _tagUsage.dir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    _tagUsage.sort = field;
+                    // Numbers start high-to-low, text starts A-Z.
+                    _tagUsage.dir = (field === 'name' || field === 'category' || field === 'description') ? 'asc' : 'desc';
+                }
+                renderSetups();
+            };
+
+            window.setSetupsTagHideUnused = function(hide) {
+                _tagUsage.hideUnused = !!hide;
                 renderSetups();
             };
 

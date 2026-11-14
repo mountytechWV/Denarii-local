@@ -1723,7 +1723,6 @@
 
                         <div class="settings-nav-label">General</div>
                         <button class="settings-nav-item" data-settings-tab="settings-broker-accounts" onclick="switchSettingsTab('settings-broker-accounts')">Broker Accounts</button>
-                        <button class="settings-nav-item" data-settings-tab="settings-tags" onclick="switchSettingsTab('settings-tags')">Tags Management</button>
                         <button class="settings-nav-item" data-settings-tab="settings-integrations" onclick="switchSettingsTab('settings-integrations')">Integrations</button>
                         <button class="settings-nav-item" data-settings-tab="settings-conflicts" style="display:none;" onclick="switchSettingsTab('settings-conflicts')">Conflict Copies</button>
                         <button class="settings-nav-item" data-settings-tab="settings-data" onclick="switchSettingsTab('settings-data')">Data</button>
@@ -1899,78 +1898,58 @@
                         </div>
 
                         <div class="settings-panel" id="settings-tags">
+                            <!-- The page header already says Tags Management. -->
                             <div class="settings-panel-head">
-                                <h3 class="settings-title">Tags Management</h3>
-                                <button class="btn btn-primary btn-small" onclick="showAddTagForm()">+ Add Tag</button>
+                                <p class="settings-desc">Open a category to see and manage its tags. Unfavorited categories and tags are dimmed and hidden from trade entry.</p>
+                                <button class="btn btn-primary btn-small" onclick="showNewCategoryForm()">+ New category</button>
                             </div>
 
-                            <!-- Add/Edit Tag Form (hidden by default) -->
-                            <div id="tag-form-card" class="card settings-subcard" style="display:none;">
-                                <h4 id="tag-form-title" class="settings-subtitle">Add New Tag</h4>
-                                <div class="field-row-2 field-row-gap">
-                                    <div class="form-group" style="margin:0;">
-                                        <label>Tag Name</label>
-                                        <input type="text" id="tag-name-input" placeholder="e.g. breakout entry">
-                                    </div>
-                                    <div class="form-group" style="margin:0;">
-                                        <label>Category</label>
-                                        <select id="tag-category-input"></select>
-                                    </div>
+                            <!-- New category (hidden until "+ New category") -->
+                            <div id="category-new-card" class="tgm-newcat" style="display:none;">
+                                <div class="form-group tgm-newcat-field">
+                                    <label for="new-category-input">New category name</label>
+                                    <input type="text" id="new-category-input" placeholder="e.g. Risk Management" onkeydown="if(event.key==='Enter')addCategory();if(event.key==='Escape')hideNewCategoryForm();">
                                 </div>
-                                <div class="form-group">
-                                    <label>Description (optional)</label>
-                                    <input type="text" id="tag-desc-input" placeholder="Short description">
-                                </div>
-                                <div id="tag-form-msg" style="display:none;margin-bottom:10px;"></div>
-                                <div class="settings-actions">
-                                    <button class="btn btn-primary btn-small" onclick="saveTag()">Save Tag</button>
-                                    <button class="btn btn-secondary btn-small" onclick="cancelTagForm()">Cancel</button>
-                                </div>
+                                <button class="btn btn-primary btn-small settings-field-btn" onclick="addCategory()">Add</button>
+                                <button class="btn btn-secondary btn-small settings-field-btn" onclick="hideNewCategoryForm()">Cancel</button>
                             </div>
-
-                            <!-- Category Management (hidden by default) -->
-                            <div id="category-manage-card" class="card settings-subcard" style="display:none;">
-                                <h4 class="settings-subtitle">Manage Categories</h4>
-                                <div id="category-list" style="margin-bottom:14px;"></div>
-                                <div style="display:flex;gap:10px;align-items:end;">
-                                    <div class="form-group" style="margin:0;flex:1;">
-                                        <label>New Category Name</label>
-                                        <input type="text" id="new-category-input" placeholder="e.g. Risk Management">
-                                    </div>
-                                    <button class="btn btn-primary btn-small settings-field-btn" onclick="addCategory()">Add</button>
-                                </div>
-                                <div id="category-form-msg" style="display:none;margin-top:10px;"></div>
-                                <div style="margin-top:14px;">
-                                    <button class="btn btn-secondary btn-small" onclick="closeCategoryManager()">Done</button>
-                                </div>
-                            </div>
-
+                            <!-- Category add/rename errors -->
+                            <div id="category-form-msg" style="display:none;margin-bottom:12px;"></div>
                             <!-- Save feedback (shown briefly after tag is saved/updated) -->
                             <div id="tag-save-msg" style="display:none;margin-bottom:12px;"></div>
 
-                            <!-- Filter & Search -->
-                            <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
-                                <label style="margin:0;font-size:13px;">Filter by category</label>
-                                <select id="tag-filter-category" onchange="renderTagsTable()" style="min-width:140px;"></select>
-                                <input type="text" id="tag-search-input" placeholder="Search Tags" oninput="renderTagsTable()" style="max-width:200px;">
-                                <button class="btn btn-secondary btn-small" onclick="openCategoryManager()" style="margin-left:auto;">Manage Categories</button>
+                            <div class="ai-filter-bar tgm-search">
+                                <input type="text" id="tag-search-input" class="ai-filter-search" placeholder="Search tags" aria-label="Search tags" oninput="renderCategoryList()">
                             </div>
 
-                            <!-- Tags Table -->
-                            <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-                                <table id="tags-table">
-                                    <thead>
-                                        <tr>
-                                            <th style="width:32px;text-align:center;font-size:14px;" title="Favorite">★</th>
-                                            <th style="cursor:pointer;user-select:none;" onclick="setTagSort('name')">Tag name<span id="tag-sort-name"></span></th>
-                                            <th style="cursor:pointer;user-select:none;" onclick="setTagSort('category')">Category<span id="tag-sort-category"></span></th>
-                                            <th style="cursor:pointer;user-select:none;" onclick="setTagSort('used')">Used<span id="tag-sort-used"></span></th>
-                                            <th style="cursor:pointer;user-select:none;" onclick="setTagSort('description')">Description<span id="tag-sort-description"></span></th>
-                                            <th style="width:60px;"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tags-table-body"></tbody>
-                                </table>
+                            <!-- Categories; each expands in place to list its tags. Rendered by renderCategoryList(). -->
+                            <div id="category-list" class="tgm-cat-list"></div>
+
+                            <!-- Add/Edit Tag Form. One instance; renderCategoryList() moves it into
+                                 the open category and parks it here (hidden) otherwise. -->
+                            <div id="tag-form-home" hidden>
+                                <div id="tag-form-card" class="card settings-subcard" style="display:none;">
+                                    <h4 id="tag-form-title" class="settings-subtitle">Add New Tag</h4>
+                                    <div class="field-row-2 field-row-gap">
+                                        <div class="form-group" style="margin:0;">
+                                            <label>Tag Name</label>
+                                            <input type="text" id="tag-name-input" placeholder="e.g. breakout entry">
+                                        </div>
+                                        <div class="form-group" style="margin:0;">
+                                            <label>Category</label>
+                                            <select id="tag-category-input"></select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Description (optional)</label>
+                                        <input type="text" id="tag-desc-input" placeholder="Short description">
+                                    </div>
+                                    <div id="tag-form-msg" style="display:none;margin-bottom:10px;"></div>
+                                    <div class="settings-actions">
+                                        <button class="btn btn-primary btn-small" onclick="saveTag()">Save Tag</button>
+                                        <button class="btn btn-secondary btn-small" onclick="cancelTagForm()">Cancel</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -2187,7 +2166,6 @@
                                 <li><strong>Profile:</strong> name, avatar, time zone and display currency.</li>
                                 <li><strong>Security:</strong> change your password or permanently delete your account.</li>
                                 <li><strong>Broker Accounts:</strong> add and edit accounts, assign trading styles, link Webull, and restore the demo account.</li>
-                                <li><strong>Tags Management:</strong> create tags and categories.</li>
                                 <li><strong>Integrations:</strong> your Gemini API key and Webull connection.</li>
                             </ul>
                         </section>
@@ -2198,7 +2176,7 @@
                             <p>Build your playbook under <strong>Strategy Management</strong>. Each strategy has rule groups (e.g., Entry Criteria, Risk Management) whose rules appear as checkboxes during trade entry so you can score execution.</p>
                             <p>Favorite the strategies you actively trade. Unfavoriting hides a strategy from dropdowns but doesn't delete it. Use <strong>+ Add Favorite</strong> to bring it back.</p>
                             <h4>Tags</h4>
-                            <p>Create custom labels under <strong>Settings &rarr; Tags Management</strong> and apply them to trades during entry or editing. Organize by category (pattern, mistake, catalyst, etc.).</p>
+                            <p>Create custom labels under <strong>Strategy &amp; Tags &rarr; Tags Management</strong> and apply them to trades during entry or editing. Organize by category (pattern, mistake, catalyst, etc.).</p>
                             <h4>Note Templates</h4>
                             <p>Insert a template from the notes toolbar to start with a consistent structure instead of a blank editor. Favorite a template to make it appear in the quick-pick dropdown.</p>
                         </section>
@@ -2783,7 +2761,7 @@ Analyze this trader's data and identify their top 3 behavioral patterns negative
     <script src="js/supabase-auth.js" defer></script>
     <script src="js/shared/prompt-modal.js?v=2" defer></script>
     <script src="js/shared/filter-bar.js?v=7" defer></script>
-    <script src="Denarii.js?v=81" defer></script>
+    <script src="Denarii.js?v=82" defer></script>
     <script src="js/services/webull-sync.js?v=6" defer></script>
     <script src="js/legal-bundle.js" defer></script>
     <script src="js/auth.js?v=48" defer></script>
@@ -2823,14 +2801,14 @@ Analyze this trader's data and identify their top 3 behavioral patterns negative
     <!-- Page modules (extracted from Denarii.js) -->
     <script src="js/pages/snapshot.js?v=13" defer></script>
     <script src="js/pages/perf-trends.js?v=11" defer></script>
-    <script src="js/pages/setups.js?v=9" defer></script>
+    <script src="js/pages/setups.js?v=10" defer></script>
     <script src="js/pages/timing.js?v=6" defer></script>
     <script src="js/pages/symbols.js?v=6" defer></script>
     <script src="js/pages/risk.js?v=8" defer></script>
     <script src="js/pages/discipline.js?v=8" defer></script>
     <script src="js/pages/analytics-helpers.js?v=2" defer></script>
     <script src="js/pages/stock-chart.js?v=4" defer></script>
-    <script src="js/pages/settings.js?v=12" defer></script>
+    <script src="js/pages/settings.js?v=13" defer></script>
     <script src="js/shared/editor-toolbar.js?v=1" defer></script>
     <script src="js/pages/journal.js?v=27" defer></script>
     <script src="js/pages/broker-accounts.js?v=20" defer></script>
