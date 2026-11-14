@@ -272,7 +272,7 @@ test('registration checkbox: hidden when unavailable; shows who it replaces', as
 
 test('markup: registration checkbox is checked by default and hidden until available; Settings section hidden too', () => {
     assert.match(HTML, /<div class="form-group" id="reg-autosignin-group" style="display:none;/);
-    assert.match(HTML, /<input type="checkbox" id="reg-autosignin" checked /);
+    assert.match(HTML, /<input type="checkbox" id="reg-autosignin" checked[ >]/);
     assert.match(HTML, /Automatically sign me in on this computer/);
     assert.match(HTML, /<div id="autosignin-section" style="display:none;/);
     assert.match(HTML, /id="settings-autosignin" onchange="toggleAutoSignIn\(this\)"/);

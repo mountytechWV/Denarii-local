@@ -725,7 +725,7 @@
             if (!el) {
                 el = document.createElement('div');
                 el.id = 'settings-webull';
-                el.style.cssText = 'margin-top:32px;padding-top:24px;border-top:1px solid var(--border);';
+                el.className = 'settings-webull';
                 panel.appendChild(el);
             }
             return el;
@@ -846,12 +846,11 @@
         // Last sync time, import progress, errors and Sync now for the
         // linked journals. Journals sync one at a time.
         function webullSyncHtml(s, dis) {
-            const muted = 'color:var(--text-secondary);font-size:13px;';
             const links = Array.isArray(s.links) ? s.links.filter(l => l && l.journalId) : [];
-            if (!links.length) return '<p style="' + muted + 'margin-bottom:16px;">' + escapeHtml(WEBULL_NO_LINKS_MSG) + '</p>';
+            if (!links.length) return '<p class="settings-desc">' + escapeHtml(WEBULL_NO_LINKS_MSG) + '</p>';
             const running = webullUi.running || links.some(l => l.status === 'running');
             const last = Math.max.apply(null, links.map(l => Date.parse(l.lastSyncedAt || '')).filter(isFinite).concat(-Infinity));
-            let html = '<div style="' + muted + 'margin-bottom:12px;line-height:1.6;">' +
+            let html = '<div class="wb-status">' +
                 '<div>Last synced: ' + escapeHtml(isFinite(last) ? new Date(last).toLocaleString() : 'Never') + '</div>';
             links.forEach(l => {
                 const text = l.progress ? webullProgressText(l.progress) : '';
@@ -861,10 +860,10 @@
             links.forEach(l => {
                 if (!l.error || l.status === 'ok' || l.status === 'running') return;
                 const type = l.status === 'needs_approval' ? 'warning' : 'danger';
-                html += '<div class="alert alert-' + type + '" style="margin-bottom:12px;">' +
+                html += '<div class="alert alert-' + type + ' wb-alert">' +
                     escapeHtml(webullJournalName(l.journalId) + ': ' + l.error) + '</div>';
             });
-            html += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">' +
+            html += '<div class="settings-actions wb-actions--spaced">' +
                 '<button class="btn btn-secondary" onclick="syncWebullNow()"' + (running ? ' disabled' : dis()) + '>' + (running ? 'Syncing…' : 'Sync now') + '</button>' +
                 '</div>';
             return html;
@@ -881,18 +880,17 @@
             const s = webullUi.status;
             const busy = webullUi.busy;
             const dis = (action) => (busy || (action && webullCoolingDown(action))) ? ' disabled' : '';
-            const muted = 'color:var(--text-secondary);font-size:13px;';
-            const revokeNote = '<p style="' + muted + 'margin-top:8px;">' + escapeHtml(WEBULL_REVOKE_MSG) + '</p>';
+            const revokeNote = '<p class="settings-note settings-note--spaced">' + escapeHtml(WEBULL_REVOKE_MSG) + '</p>';
 
-            let html = '<h3 style="margin-bottom:8px;">Webull</h3>';
-            html += '<p style="' + muted + 'margin-bottom:20px;">Denarii only reads your order history and never places trades.</p>';
+            let html = '<h3 class="settings-title">Webull</h3>';
+            html += '<p class="settings-desc">Denarii only reads your order history and never places trades.</p>';
 
             if (webullUi.msg) {
-                html += '<div class="alert alert-' + webullUi.msgType + '" style="margin-bottom:12px;">' + escapeHtml(webullUi.msg) + '</div>';
+                html += '<div class="alert alert-' + webullUi.msgType + ' wb-alert">' + escapeHtml(webullUi.msg) + '</div>';
             }
 
             if (!s) {
-                if (busy) html += '<p style="' + muted + '">Loading Webull status…</p>';
+                if (busy) html += '<p class="settings-note">Loading Webull status…</p>';
             } else if (!s.connected) {
                 html +=
                     '<div class="form-group">' +
@@ -906,17 +904,17 @@
                     '<div class="form-group">' +
                         '<label for="settings-webull-start">Import trades starting from</label>' +
                         '<input type="date" id="settings-webull-start" min="' + WEBULL_HISTORY_START + '" max="' + webullTodayUtc() + '">' +
-                        '<div style="' + muted + 'margin-top:4px;">Leave empty to import all history.</div>' +
+                        '<div class="field-hint">Leave empty to import all history.</div>' +
                     '</div>' +
-                    '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+                    '<div class="settings-actions">' +
                         '<button class="btn btn-primary" onclick="connectWebull()"' + dis('connect') + '>Connect</button>' +
                     '</div>';
             } else {
-                html += '<p style="font-weight:600;margin-bottom:12px;">Webull connected · key ••••' + escapeHtml(String(s.last4 || '')) + '</p>';
+                html += '<p class="wb-connected">Webull connected · key ••••' + escapeHtml(String(s.last4 || '')) + '</p>';
                 if (s.approvalState === 'ok') {
                     const accounts = Array.isArray(s.accounts) ? s.accounts : [];
                     if (accounts.length) {
-                        html += '<ul style="margin:0 0 16px 18px;' + muted + '">' +
+                        html += '<ul class="wb-accounts">' +
                             accounts.map(a => '<li>' + escapeHtml(String((a && a.label) || 'Webull account')) + '</li>').join('') +
                             '</ul>';
                     }
@@ -924,22 +922,22 @@
                     const expMs = Date.parse(s.approvalExpiresAt || '');
                     if (isFinite(expMs)) {
                         const soon = expMs - Date.now() < 3 * 24 * 60 * 60 * 1000;
-                        html += '<p style="font-size:13px;margin-bottom:16px;color:' + (soon ? 'color-mix(in srgb, var(--warning) 50%, var(--text-primary))' : 'var(--text-secondary)') + ';">' +
+                        html += '<p class="wb-expiry' + (soon ? ' wb-warn' : '') + '">' +
                             escapeHtml('Webull approval expires ' + new Date(expMs).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })) + '</p>';
                     }
                     html += webullSyncHtml(s, dis);
-                    html += '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+                    html += '<div class="settings-actions">' +
                         '<button class="btn btn-secondary" onclick="disconnectWebull()"' + dis() + '>Disconnect</button>' +
                         '</div>' + revokeNote;
                 } else {
                     // Steps shown until an action's own message replaces them.
                     if (!webullUi.msg) {
-                        html += '<div class="alert alert-warning" style="margin-bottom:12px;">' +
+                        html += '<div class="alert alert-warning wb-alert">' +
                             escapeHtml('Your Webull approval has expired or is waiting. Tap "I\'ve approved it, check again". ' +
                                 'If it says the approval expired, tap "Send new code", enter the code in the Webull app, then tap "I\'ve approved it, check again".') +
                             '</div>';
                     }
-                    html += '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+                    html += '<div class="settings-actions">' +
                         '<button class="btn btn-primary" onclick="checkWebullApproval()"' + dis('check_approval') + '>I\'ve approved it, check again</button>' +
                         '<button class="btn btn-secondary" onclick="resendWebullCode()"' + dis('resend_code') + '>Send new code</button>' +
                         '<button class="btn btn-secondary" onclick="disconnectWebull()"' + dis() + '>Disconnect</button>' +

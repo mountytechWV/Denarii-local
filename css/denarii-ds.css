@@ -3732,3 +3732,181 @@ main.workspace > .workspace-topbar::before {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   LOCAL-ONLY SCREENS (desktop app; not in the cloud markup)
+   Settings > Data, automatic sign-in, Integrations Model and Webull,
+   the broker account Webull link and Needs review, the update banner,
+   the in-app prompt modal, Help > Legal and the TradingView credits.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* A titled block below another inside a settings panel. */
+.settings-section {
+    margin-top: var(--ds-space-7);
+    padding-top: var(--ds-space-6);
+    border-top: 1px solid var(--border);
+}
+.settings-field-spaced { margin-top: var(--ds-space-4); }
+.settings-actions--spaced { margin-bottom: var(--ds-space-5); }
+.settings-note {
+    margin: 0;
+    font-size: var(--ds-text-sm);
+    line-height: var(--ds-leading-normal);
+    color: var(--text-secondary);
+}
+.settings-note + .settings-note,
+.settings-note--spaced { margin-top: var(--ds-space-2); }
+.settings-msg { margin-top: var(--ds-space-3); }
+.settings-status-badge {
+    margin-left: var(--ds-space-2);
+    font-size: var(--ds-text-sm);
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+/* Settings > Data: paths and messages can be long, unbroken file names. */
+#settings-data-msg { margin-bottom: var(--ds-space-3); word-break: break-all; }
+.settings-data-info {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    white-space: pre-line;
+    word-break: break-all;
+}
+
+/* Stay signed in: a checkbox row (sign-up form and Security panel). */
+.settings-toggle {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--ds-space-2);
+    font-size: 13px;
+    font-weight: var(--ds-weight-medium);
+    line-height: 1.5;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+.settings-toggle--muted {
+    font-size: var(--ds-text-xs);
+    font-weight: var(--ds-weight-regular);
+    color: var(--text-secondary);
+}
+.settings-toggle input {
+    flex-shrink: 0;
+    width: auto;
+    margin: 3px 0 0;
+    padding: 0;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+/* Webull (Integrations) and the Webull link (Broker Account modal). */
+.settings-webull { margin-top: var(--ds-space-7); padding-top: var(--ds-space-6); border-top: 1px solid var(--border); }
+.wb-link-section { margin-top: var(--ds-space-4); padding-top: var(--ds-space-4); border-top: 1px solid var(--border); }
+.wb-link-title {
+    margin: 0 0 var(--ds-space-2);
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-md);
+    font-weight: var(--ds-weight-semibold);
+}
+.wb-alert { margin-bottom: var(--ds-space-3); }
+.wb-alert--flush { margin-bottom: 0; }
+.wb-connected {
+    margin-bottom: var(--ds-space-3);
+    font-weight: var(--ds-weight-semibold);
+    color: var(--text-primary);
+}
+.wb-accounts {
+    margin: 0 0 var(--ds-space-4) 18px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+.wb-status {
+    margin-bottom: var(--ds-space-3);
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+.wb-expiry { margin-bottom: var(--ds-space-4); font-size: 13px; color: var(--text-secondary); }
+.wb-warn { color: var(--warning-text); }
+.wb-error { color: var(--danger-text); }
+.wb-actions { margin-bottom: var(--ds-space-3); }
+.wb-actions--spaced { margin-bottom: var(--ds-space-4); }
+.ba-meta.wb-warn { font-size: var(--ds-text-xs); }
+
+/* Needs review panel: one bordered row per held trade or fill group. */
+.wb-review { margin-bottom: var(--ds-space-3); }
+.wb-review-title {
+    margin-bottom: 6px;
+    font-size: var(--ds-text-base);
+    font-weight: var(--ds-weight-semibold);
+    color: var(--warning-text);
+}
+.wb-review-item {
+    margin-bottom: var(--ds-space-2);
+    padding: var(--ds-space-2) 10px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-md);
+    font-size: 13px;
+}
+.wb-review-held {
+    margin-left: var(--ds-space-3);
+    color: var(--text-secondary);
+}
+.wb-review-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ds-space-2);
+    margin-top: 6px;
+}
+
+/* Update banner (js/update-banner.js): fixed bar above the page. */
+.update-banner {
+    position: fixed;
+    left: 50%;
+    bottom: var(--ds-space-4);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-3);
+    box-sizing: border-box;
+    width: 520px;
+    max-width: calc(100vw - 32px);
+    padding: 10px 14px;
+    transform: translateX(-50%);
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border: 1px solid color-mix(in srgb, var(--primary) 55%, var(--border));
+    border-radius: var(--ds-radius-lg);
+    box-shadow: var(--shadow-lg);
+    font-size: 13px;
+}
+.update-banner-text { flex: 1; min-width: 0; }
+
+/* In-app prompt modal (js/shared/prompt-modal.js): above every other modal. */
+#prompt-modal { z-index: 4000; }
+#prompt-modal .modal-content { max-width: 460px; }
+.prompt-modal-message {
+    margin-bottom: var(--ds-space-3);
+    font-size: 14px;
+    color: var(--text-secondary);
+    white-space: pre-line;
+}
+#prompt-modal-input { width: 100%; }
+
+/* Help > Legal and the TradingView credits. */
+.help-legal-content {
+    font-size: 13px;
+    line-height: 1.7;
+}
+.help-credit {
+    margin-top: var(--ds-space-2);
+    font-size: var(--ds-text-xs);
+    color: var(--text-secondary);
+}
+.help-credit--first { margin-top: var(--ds-space-4); }
+.help-credit a { color: var(--info-text); }
+.chart-credit { margin-top: 6px; }

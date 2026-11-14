@@ -14,6 +14,7 @@ const AI = read('js/widgets/journal-ai.js');
 const APP = read('Denarii.js');
 const JNL = read('js/pages/journal.js');
 const HTML = read('index.html');
+const CSS = read('css/denarii-ds.css');
 
 function braceEnd(src, from) {
     let depth = 0;
@@ -274,8 +275,9 @@ test('Trade Reflection: the load generation moves on open and close', () => {
 // ── Markup, format key, versions ───────────────────────────────────────────
 
 test('buttons are type="button" and wired; selects carry the shared format marker', () => {
-    assert.ok(HTML.includes('<button type="button" class="btn btn-secondary btn-small" id="nt-cleanup-btn" style="white-space:nowrap;" onclick="ntCleanUpAI()">Clean Up with AI</button>'));
-    assert.ok(HTML.includes('<button type="button" class="btn btn-secondary btn-small" id="jnl-cleanup-btn" style="white-space:nowrap;" onclick="jnlCleanUpAI()">Clean Up with AI</button>'));
+    assert.ok(HTML.includes('<button type="button" class="btn btn-secondary btn-small nt-nowrap" id="nt-cleanup-btn" onclick="ntCleanUpAI()">Clean Up with AI</button>'));
+    assert.ok(HTML.includes('<button type="button" class="btn btn-secondary btn-small nt-nowrap" id="jnl-cleanup-btn" onclick="jnlCleanUpAI()">Clean Up with AI</button>'));
+    assert.ok(/\.nt-nowrap \{ white-space: nowrap; \}/.test(CSS));
     for (const p of ['nt', 'jnl']) {
         const sel = HTML.slice(HTML.indexOf('<select id="' + p + '-cleanup-format"'), HTML.indexOf('</select>', HTML.indexOf('<select id="' + p + '-cleanup-format"')));
         assert.ok(sel.includes('data-note-cleanup-format') && sel.includes('noteCleanupFormatChange(this.value)'), p);

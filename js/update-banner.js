@@ -11,13 +11,10 @@
         if (old) old.remove();
         var bar = document.createElement('div');
         bar.id = 'update-ready-banner';
+        bar.className = 'update-banner';
         bar.setAttribute('role', 'status');
-        bar.style.cssText = 'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:9999;' +
-            'max-width:calc(100vw - 32px);width:520px;box-sizing:border-box;padding:10px 14px;border-radius:8px;' +
-            'background:var(--bg-secondary,#1f2937);color:var(--text-primary,#f9fafb);border:1px solid var(--primary,#3b82f6);' +
-            'box-shadow:0 4px 16px rgba(0,0,0,.25);font-size:13px;display:flex;gap:12px;align-items:center;';
         var text = document.createElement('span');
-        text.style.flex = '1';
+        text.className = 'update-banner-text';
         text.textContent = 'Denarii ' + (version ? version + ' ' : '') + 'is ready. Restart to install.';
         var restart = document.createElement('button');
         restart.type = 'button';

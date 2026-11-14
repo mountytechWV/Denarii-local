@@ -20,14 +20,13 @@
     function build() {
         modal = document.createElement('div');
         modal.id = 'prompt-modal';
-        modal.className = 'modal';
-        modal.style.zIndex = '4000'; // above other modals and the fullscreen editor
+        modal.className = 'modal'; // #prompt-modal sits above other modals and the fullscreen editor (denarii-ds.css)
         modal.setAttribute('role', 'dialog');
         modal.setAttribute('aria-modal', 'true');
         modal.innerHTML =
             '<div class="modal-content">' +
                 '<h2 id="prompt-modal-title"></h2>' +
-                '<p id="prompt-modal-message" style="margin-bottom:12px;white-space:pre-line;"></p>' +
+                '<p id="prompt-modal-message" class="prompt-modal-message"></p>' +
                 '<input id="prompt-modal-input" type="text" autocomplete="off" spellcheck="false">' +
                 '<div class="modal-buttons">' +
                     '<button type="button" class="btn btn-secondary" id="prompt-modal-cancel"></button>' +

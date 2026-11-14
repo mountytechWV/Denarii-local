@@ -14,6 +14,7 @@ const APP  = fs.readFileSync(path.join(ROOT, 'Denarii.js'), 'utf8');
 const JNL  = fs.readFileSync(path.join(ROOT, 'js', 'pages', 'journal.js'), 'utf8');
 const BA   = fs.readFileSync(path.join(ROOT, 'js', 'pages', 'broker-accounts.js'), 'utf8');
 const HTML = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const CSS  = fs.readFileSync(path.join(ROOT, 'css', 'denarii-ds.css'), 'utf8');
 
 function extractFunction(src, name) {
     const start = src.indexOf('function ' + name + '(');
@@ -135,8 +136,11 @@ test('index.html: Net / Gross / Fees sit in Calculated Metrics after Realized P&
     const ids = ['jnl-pnl-net', 'jnl-pnl-net-pct', 'jnl-pnl-gross', 'jnl-pnl-gross-pct', 'jnl-fee-source-badge', 'jnl-pnl-fees'];
     ids.forEach(id => assert.ok(added.includes('id="' + id + '"'), id));
     assert.ok(!/<input|<select|<textarea|<button/.test(added));
-    // Same label / value styling as the other metrics.
-    assert.equal((added.match(/style="font-size:14px;font-weight:600;color:var\(--text-primary\);">--<\/div>/g) || []).length, 6);
+    // Same label / value styling as the other metrics (now the shared metric classes).
+    assert.equal((added.match(/class="nt-metric-value">--<\/div>/g) || []).length, 6);
+    ['jnl-pnl-net', 'jnl-pnl-net-pct', 'jnl-pnl-gross', 'jnl-pnl-gross-pct', 'jnl-pnl-fees']
+        .forEach(id => assert.match(added, new RegExp('<div class="nt-metric"><div class="nt-metric-label">[^<]*(<span[^>]*></span>)?</div><div id="' + id + '" class="nt-metric-value">--</div></div>'), id));
+    assert.match(CSS, /:is\(#trade-form, #journal-editor-form\) \.nt-metric-value \{[^}]*font-weight:[^}]*color: var\(--text-primary\);/);
     // Same card as the other metrics.
     const card = HTML.lastIndexOf('Calculated Metrics', i);
     assert.ok(card > HTML.indexOf('id="trade-journal"'));

@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="vendor/fonts/inter/inter.css">
     <link rel="stylesheet" href="vendor/fonts/archivo-narrow/archivo-narrow.css">
     <link rel="stylesheet" href="Denarii.css?v=37">
-    <link rel="stylesheet" href="css/denarii-ds.css?v=33">
+    <link rel="stylesheet" href="css/denarii-ds.css?v=34">
 </head>
 <body>
     <!-- Migration Overlay (hidden by default, shown during cloud migration) -->
@@ -42,24 +42,24 @@
     <!-- Login Screen -->
     <div id="login-screen" class="login-screen">
         <div class="login-card">
-            <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
+            <div class="login-brand">
                 <img src="Logos/denarii-logo.webp?v=2" alt="Denarii logo" style="width:56px;height:56px;border-radius:18px;filter:drop-shadow(0 14px 26px rgba(255,106,0,0.22));">
                 <div>
-                    <h1 style="margin:0;">Denarii</h1>
-                    <div style="font-size:12px;color:var(--text-secondary);letter-spacing:0.12em;text-transform:uppercase;">Trading Reflections</div>
+                    <h1 class="login-title">Denarii</h1>
+                    <div class="login-kicker">Trading Reflections</div>
                 </div>
             </div>
-            <p style="color: var(--text-secondary); margin-bottom: 16px;">
+            <p class="login-tagline">
                 Professional Trading Reflections
             </p>
 
             <!-- ═══ VIEW: Login (default) ═══ -->
             <div id="auth-login" class="auth-view">
-                <h3 style="margin-bottom:4px;">Welcome Back</h3>
-                <p style="color:var(--text-secondary);font-size:13px;margin-bottom:18px;">Enter your credentials to unlock your journal.</p>
+                <h3>Welcome Back</h3>
+                <p class="auth-desc">Enter your credentials to unlock your journal.</p>
 
                 <div class="form-group" id="login-email-group" style="display:none;">
-                    <label for="login-email">Email <span style="font-weight:normal;color:var(--text-secondary);font-size:12px;">(for new-device restore)</span></label>
+                    <label for="login-email">Email <span class="label-note">(for new-device restore)</span></label>
                     <input id="login-email" type="email" placeholder="Your account email" autocomplete="email">
                 </div>
                 <div class="form-group">
@@ -68,7 +68,7 @@
                 </div>
                 <div class="form-group">
                     <label for="login-password">Password</label>
-                    <div style="position:relative;">
+                    <div class="pw-field">
                         <input id="login-password" type="password" placeholder="Your password" autocomplete="current-password">
                         <button type="button" class="pw-toggle" onclick="togglePasswordVis('login-password',this)" tabindex="-1" aria-label="Show password">👁</button>
                     </div>
@@ -97,13 +97,13 @@
 
             <!-- ═══ VIEW: Register ═══ -->
             <div id="auth-register" class="auth-view" style="display:none;">
-                <h3 style="margin-bottom:4px;">Create Your Account</h3>
-                <p style="color:var(--text-secondary);font-size:13px;margin-bottom:18px;">Your journal is saved on this computer, encrypted with your password.</p>
+                <h3>Create Your Account</h3>
+                <p class="auth-desc">Your journal is saved on this computer, encrypted with your password.</p>
 
                 <div id="reg-email-group" class="form-group" style="display:none;">
                     <label for="reg-email">Email</label>
                     <input id="reg-email" type="email" placeholder="you@example.com" autocomplete="email">
-                    <small style="color:var(--text-secondary);font-size:11px;">Required for cloud account features.</small>
+                    <small class="field-hint">Required for cloud account features.</small>
                 </div>
                 <div class="form-group">
                     <label for="reg-username">Username</label>
@@ -111,14 +111,14 @@
                 </div>
                 <div class="form-group">
                     <label for="reg-password">Password</label>
-                    <div style="position:relative;">
+                    <div class="pw-field">
                         <input id="reg-password" type="password" placeholder="Min 8 characters" autocomplete="new-password">
                         <button type="button" class="pw-toggle" onclick="togglePasswordVis('reg-password',this)" tabindex="-1" aria-label="Show password">👁</button>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="reg-confirm">Confirm Password</label>
-                    <div style="position:relative;">
+                    <div class="pw-field">
                         <input id="reg-confirm" type="password" placeholder="Re-enter your password" autocomplete="new-password">
                         <button type="button" class="pw-toggle" onclick="togglePasswordVis('reg-confirm',this)" tabindex="-1" aria-label="Show password">👁</button>
                     </div>
@@ -150,12 +150,12 @@
 
                 <!-- Automatic sign-in (shown only when this computer can protect the key) -->
                 <div class="form-group" id="reg-autosignin-group" style="display:none;margin-bottom:16px;">
-                    <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px;line-height:1.5;color:var(--text-secondary);text-transform:none;letter-spacing:0;font-weight:400;">
-                        <input type="checkbox" id="reg-autosignin" checked style="width:auto;padding:0;margin-top:3px;flex-shrink:0;">
+                    <label class="settings-toggle settings-toggle--muted">
+                        <input type="checkbox" id="reg-autosignin" checked>
                         <span>Automatically sign me in on this computer</span>
                     </label>
-                    <small style="display:block;margin-top:6px;color:var(--text-secondary);font-size:11px;">Anyone who can sign in to this Windows account will be able to open your journal. Backups still need your password.</small>
-                    <small id="reg-autosignin-replace" style="display:none;margin-top:4px;color:var(--text-secondary);font-size:11px;"></small>
+                    <small class="field-hint">Anyone who can sign in to this Windows account will be able to open your journal. Backups still need your password.</small>
+                    <small id="reg-autosignin-replace" class="field-hint" style="display:none;"></small>
                 </div>
 
                 <div id="reg-error" class="auth-error" style="display:none;"></div>
@@ -171,8 +171,8 @@
 
             <!-- ═══ VIEW: Forgot Password ═══ -->
             <div id="auth-forgot" class="auth-view" style="display:none;">
-                <h3 style="margin-bottom:4px;">Reset Your Password</h3>
-                <p style="color:var(--text-secondary);font-size:13px;margin-bottom:18px;">Enter your username and recovery key to reset the password for that local journal.</p>
+                <h3>Reset Your Password</h3>
+                <p class="auth-desc">Enter your username and recovery key to reset the password for that local journal.</p>
 
                 <div class="form-group">
                     <label for="forgot-username">Username</label>
@@ -181,18 +181,18 @@
                 <div class="form-group">
                     <label for="forgot-recovery-key">Recovery Key</label>
                     <input id="forgot-recovery-key" type="text" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" style="font-family:monospace;letter-spacing:1px;">
-                    <small style="color:var(--text-secondary);font-size:11px;">The 16-character key you saved when you created your account.</small>
+                    <small class="field-hint">The 16-character key you saved when you created your account.</small>
                 </div>
                 <div class="form-group">
                     <label for="forgot-new-pw">New Password</label>
-                    <div style="position:relative;">
+                    <div class="pw-field">
                         <input id="forgot-new-pw" type="password" placeholder="Min 8 characters" autocomplete="new-password">
                         <button type="button" class="pw-toggle" onclick="togglePasswordVis('forgot-new-pw',this)" tabindex="-1" aria-label="Show password">👁</button>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="forgot-confirm-pw">Confirm New Password</label>
-                    <div style="position:relative;">
+                    <div class="pw-field">
                         <input id="forgot-confirm-pw" type="password" placeholder="Re-enter new password" autocomplete="new-password">
                         <button type="button" class="pw-toggle" onclick="togglePasswordVis('forgot-confirm-pw',this)" tabindex="-1" aria-label="Show password">👁</button>
                     </div>
@@ -211,8 +211,8 @@
 
             <!-- ═══ VIEW: Manage Accounts ═══ -->
             <div id="auth-manage" class="auth-view" style="display:none;">
-                <h3 style="margin-bottom:4px;">Manage Accounts</h3>
-                <p style="color:var(--text-secondary);font-size:13px;margin-bottom:18px;">View and remove accounts stored on this computer.</p>
+                <h3>Manage Accounts</h3>
+                <p class="auth-desc">View and remove accounts stored on this computer.</p>
 
                 <div id="accounts-list" style="margin-bottom:18px;">
                     <p style="color:var(--text-secondary);font-size:13px;">Loading...</p>
@@ -274,10 +274,10 @@
         <div class="modal-content">
             <h2>Delete Strategy?</h2>
             <p id="strategy-delete-message" style="margin-bottom: 12px;"></p>
-            <p id="strategy-delete-note" style="color: var(--warning); font-size: 12px; margin-bottom: 14px;"></p>
+            <p id="strategy-delete-note" class="modal-note-warn"></p>
             <div class="modal-buttons">
                 <button type="button" class="btn btn-secondary" id="strategy-delete-cancel">Cancel</button>
-                <button type="button" class="btn" id="strategy-delete-confirm" style="background:var(--danger);color:var(--on-danger);border:none;">Delete</button>
+                <button type="button" class="btn btn-danger" id="strategy-delete-confirm">Delete</button>
             </div>
         </div>
     </div>
@@ -285,10 +285,10 @@
     <div id="export-modal" class="modal">
         <div class="modal-content">
             <h2>Back up your data?</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 16px;">
+            <p class="modal-desc">
                 Your data is saved on this computer. A backup protects it if this computer fails.
             </p>
-            <p style="color: var(--warning); font-size: 12px; margin-bottom: 14px;">
+            <p class="modal-note-warn">
                 Denarii is in beta. Back up at least once a week to protect your data.
             </p>
             <div class="alert alert-warning">
@@ -576,7 +576,7 @@
                             <span id="profile-initials">--</span>
                         </button>
                         <div style="min-width:0;">
-                            <div style="font-size:13px; font-weight:700; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" id="profile-display-name">Trader</div>
+                            <div class="sidebar-profile-name" style="font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" id="profile-display-name">Trader</div>
                         </div>
                     </div>
                 </div>
@@ -652,7 +652,7 @@
                         </div>
                         <div class="workspace-actions">
                             <div id="save-status" class="save-status saved" style="display:none">✓ Auto-saved</div>
-                            <select id="filter-broker-account" onchange="applyGlobalFilters()" style="font-size:13px;padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;">
+                            <select id="filter-broker-account" class="topbar-select" onchange="applyGlobalFilters()">
                                 <option value="all">All Accounts</option>
                             </select>
                             <button class="btn btn-secondary btn-small" onclick="lockJournal()">Lock</button>
@@ -738,9 +738,9 @@
                     <div class="card-header">
                         <div>
                             <h3 class="card-title">Add New Trade</h3>
-                            <p style="color: var(--text-secondary); font-size: 13px; margin-top: 6px;">Manually enter a trade or import from your broker.</p>
+                            <p class="nt-card-subtitle">Manually enter a trade or import from your broker.</p>
                         </div>
-                        <div style="display:flex;gap:8px;align-items:center;">
+                        <div class="nt-head-actions">
                             <span id="nt-autosave-status" class="autosave-status" title="Drafts save automatically on this computer as you type."></span>
                             <button id="broker-import-trigger" type="button" class="btn btn-secondary btn-small" onclick="openBrokerImportModal()">Broker Import</button>
                         </div>
@@ -799,92 +799,95 @@
                             <div class="form-group"><label>Entry Time</label><input type="datetime-local" id="entry-time" required></div>
                             <div class="form-group"><label>Exit Time</label><input type="datetime-local" id="exit-time"></div>
                             <div class="form-group"><label>Commission & Fees</label><input type="number" id="commission-fees" placeholder="0.00" step="0.01" min="0"></div>
-                            <div class="form-group"><label>Strategy</label>
-                                <select id="setup-type" onchange="loadStrategyRules(this.value)">
-                                    <option value="">Select strategy...</option>
-                                </select>
-                            </div>
-                            <div></div><!-- empty slot -->
-                        </div>
-
-                        <div id="strategy-rules-checklist" style="display:none;background:var(--bg-secondary);padding:14px 16px;border-radius:8px;margin-bottom:12px;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                                <h4 style="font-size:14px;margin:0;">Strategy Rules</h4>
-                                <div id="strategy-score" style="font-size:14px;font-weight:600;"></div>
-                            </div>
-                            <div id="rules-list"></div>
                         </div>
 
                         <!-- Row 6: Trade Planning — Profit Target + Stop Loss | Calculated Metrics (side by side) -->
-                        <div class="jnl-planning-metrics-row">
+                        <div class="jnl-planning-metrics-row nt-section">
 
                             <!-- Left: Combined Planned Levels -->
                             <div class="tf-planning-group">
                                 <div class="form-group">
-                                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-                                        <label style="margin:0;">Planned Levels</label>
-                                        <button type="button" class="btn btn-small btn-primary" onclick="addPlanRow('plan-rows')" style="padding:2px 8px;font-size:12px;line-height:1.6;">+</button>
+                                    <div class="nt-panel-head">
+                                        <label class="nt-section-title">Planned Levels</label>
+                                        <button type="button" class="btn btn-small btn-primary nt-add-btn" onclick="addPlanRow('plan-rows')">+</button>
                                     </div>
                                     <div id="plan-rows"></div>
                                 </div>
                             </div>
 
                             <!-- Right: Calculated Metrics -->
-                            <div style="background:var(--bg-secondary);border-radius:8px;padding:12px 16px;border:1px solid var(--border);">
-                                <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Calculated Metrics</div>
-                                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Initial Target</div><div id="metric-initial-target" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Trade Risk</div><div id="metric-trade-risk" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Total $ Risk</div><div id="metric-total-risk" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Drawdown</div><div id="metric-drawdown" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Planned R</div><div id="metric-planned-r" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Realized R</div><div id="metric-realized-r" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Realized P&amp;L</div><div id="metric-realized-pnl" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">% Gain</div><div id="metric-pct-gain" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Runup</div><div id="metric-runup" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
+                            <div class="nt-metrics">
+                                <div class="nt-section-title">Calculated Metrics</div>
+                                <div class="nt-metrics-list">
+                                    <div class="nt-metric"><div class="nt-metric-label">Initial Target</div><div id="metric-initial-target" class="nt-metric-value">--</div></div>
+                                    <div class="nt-metric"><div class="nt-metric-label">Trade Risk</div><div id="metric-trade-risk" class="nt-metric-value">--</div></div>
+                                    <div class="nt-metric"><div class="nt-metric-label">Total $ Risk</div><div id="metric-total-risk" class="nt-metric-value">--</div></div>
+                                    <div class="nt-metric"><div class="nt-metric-label">Drawdown</div><div id="metric-drawdown" class="nt-metric-value">--</div></div>
+                                    <div class="nt-metric"><div class="nt-metric-label">Planned R</div><div id="metric-planned-r" class="nt-metric-value">--</div></div>
+                                    <div class="nt-metric"><div class="nt-metric-label">Realized R</div><div id="metric-realized-r" class="nt-metric-value">--</div></div>
+                                    <div class="nt-metric"><div class="nt-metric-label">Realized P&amp;L</div><div id="metric-realized-pnl" class="nt-metric-value">--</div></div>
+                                    <div class="nt-metric"><div class="nt-metric-label">% Gain</div><div id="metric-pct-gain" class="nt-metric-value">--</div></div>
+                                    <div class="nt-metric"><div class="nt-metric-label">Runup</div><div id="metric-runup" class="nt-metric-value">--</div></div>
                                 </div>
                             </div>
 
                         </div>
 
                         <!-- Trade Grade -->
-                        <div class="form-group">
-                            <label>Trade Grade</label>
+                        <div class="form-group nt-section">
+                            <label class="nt-section-title">Trade Grade</label>
                             <input type="hidden" id="nt-trade-grade" value="">
-                            <div id="nt-grade-pills" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;"></div>
+                            <div id="nt-grade-pills" class="nt-grade-pills"></div>
                         </div>
 
                         <!-- Tags -->
                         <div class="form-group">
-                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-                                <label style="margin:0;">Tags</label>
-                                <div style="display:flex;gap:8px;align-items:center;">
+                            <div class="nt-panel-head">
+                                <label class="nt-section-title">Tags</label>
+                                <div class="nt-head-actions">
                                     <button type="button" class="btn btn-secondary btn-small" onclick="activateSection('settings');switchSettingsTab('settings-tags')">Manage Tags</button>
-                                    <button type="button" class="btn btn-primary btn-small" onclick="addNtTagRow()" style="padding:2px 8px;font-size:12px;line-height:1.6;">+</button>
+                                    <button type="button" class="btn btn-primary btn-small nt-add-btn" onclick="addNtTagRow()">+</button>
                                 </div>
                             </div>
                             <div id="nt-tag-rows"></div>
                         </div>
 
+                        <!-- Strategy: collapsible card. The header holds the select and score;
+                             loadStrategyRules shows/hides the rules body. -->
+                        <div class="nt-section">
+                            <div class="nt-strategy-card">
+                                <div class="nt-panel-head nt-strategy-head">
+                                    <label class="nt-section-title" for="setup-type">Strategy</label>
+                                    <select id="setup-type" onchange="loadStrategyRules(this.value)">
+                                        <option value="">Select strategy...</option>
+                                    </select>
+                                    <div id="strategy-score" class="nt-rules-score"></div>
+                                </div>
+                                <div id="strategy-rules-checklist" class="nt-rules-panel" style="display:none;">
+                                    <div id="rules-list"></div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Reflection -->
-                        <div style="border-top:1px solid var(--border);margin:20px 0 16px;"></div>
-                        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
-                            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em;">Reflection</div>
-                            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+                        <div class="nt-reflection-sep"></div>
+                        <div class="nt-reflection-head">
+                            <div class="nt-section-title">Reflection</div>
+                            <div class="nt-reflection-actions">
                                 <div class="cleanup-controls">
-                                <span id="nt-cleanup-msg" style="font-size:12px;color:var(--text-secondary);"></span>
+                                <span id="nt-cleanup-msg" class="nt-cleanup-msg"></span>
                                 <!-- stopPropagation: the form's autosave listeners must not treat a format change as a trade edit -->
-                                <select id="nt-cleanup-format" data-note-cleanup-format class="jnl-tb-select" style="height:30px;padding:2px 6px;font-size:13px;" title="Clean-up format" aria-label="Clean-up format"
+                                <select id="nt-cleanup-format" data-note-cleanup-format class="jnl-tb-select nt-toolbar-select" title="Clean-up format" aria-label="Clean-up format"
                                     oninput="event.stopPropagation()" onchange="event.stopPropagation();noteCleanupFormatChange(this.value)">
                                     <option value="bullets">Bullets</option>
                                     <option value="paragraphs">Paragraphs</option>
                                 </select>
-                                <button type="button" class="btn btn-secondary btn-small" id="nt-cleanup-btn" style="white-space:nowrap;" onclick="ntCleanUpAI()">Clean Up with AI</button>
+                                <button type="button" class="btn btn-secondary btn-small nt-nowrap" id="nt-cleanup-btn" onclick="ntCleanUpAI()">Clean Up with AI</button>
                                 </div>
-                                <select id="nt-template-select" class="jnl-tb-select" style="width:175px;max-width:175px;height:30px;padding:2px 6px;font-size:13px;" onchange="_ntApplyTemplate(this.value);this.value=''" title="Apply a template">
+                                <select id="nt-template-select" class="jnl-tb-select nt-toolbar-select nt-template-select" onchange="_ntApplyTemplate(this.value);this.value=''" title="Apply a template">
                                     <option value="">Select template...</option>
                                 </select>
-                                <button type="button" class="btn btn-secondary btn-small" style="white-space:nowrap;" onclick="openNoteTemplateManager('nt')">Templates</button>
+                                <button type="button" class="btn btn-secondary btn-small nt-nowrap" onclick="openNoteTemplateManager('nt')">Templates</button>
                             </div>
                         </div>
                         <div class="jnl-editor-wrap" id="nt-editor-wrap">
@@ -894,7 +897,7 @@
                                 oninput="_ntOnNotesInput()"></div>
                         </div>
 
-                        <button type="submit" class="btn btn-success" style="margin-top:16px;">Save Trade</button>
+                        <button type="submit" class="btn btn-success btn-primary nt-save-btn">Save Trade</button>
                     </form>
                 </div>
             </div>
@@ -906,11 +909,11 @@
                 <div id="jnl-view-list">
 
                 <!-- Filter + Trade List card -->
-                <div class="card" style="margin-bottom:18px;">
+                <div class="card jnl-list-card">
                     <div class="card-header">
                         <div>
                             <h3 class="card-title">Select a Trade to Reflect On</h3>
-                            <p style="color:var(--text-secondary);font-size:13px;margin-top:6px;">Use the filters to find a trade, then click Reflect to open the entry editor.</p>
+                            <p class="nt-card-subtitle">Use the filters to find a trade, then click Reflect to open the entry editor.</p>
                         </div>
                     </div>
 
@@ -922,20 +925,20 @@
                     </div>
 
                     <!-- Trade list table -->
-                    <div style="overflow-x:auto;">
-                        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <div class="jnl-list-wrap">
+                        <table class="jnl-list-table">
                             <thead>
-                                <tr style="border-bottom:1px solid var(--border);">
-                                    <th style="padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;text-align:left;">Date</th>
-                                    <th style="padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;text-align:left;">Symbol</th>
-                                    <th style="padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;text-align:left;">Type</th>
-                                    <th style="padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;text-align:left;">Side</th>
-                                    <th style="padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;text-align:left;">Qty</th>
-                                    <th style="padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;text-align:left;">Entry</th>
-                                    <th style="padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;text-align:left;">Exit</th>
-                                    <th style="padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;text-align:left;">P&amp;L</th>
-                                    <th style="padding:8px 10px;font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;text-align:left;">Account</th>
-                                    <th style="padding:8px 10px;"></th>
+                                <tr>
+                                    <th class="jnl-list-th">Date</th>
+                                    <th class="jnl-list-th">Symbol</th>
+                                    <th class="jnl-list-th">Type</th>
+                                    <th class="jnl-list-th">Side</th>
+                                    <th class="jnl-list-th">Qty</th>
+                                    <th class="jnl-list-th">Entry</th>
+                                    <th class="jnl-list-th">Exit</th>
+                                    <th class="jnl-list-th">P&amp;L</th>
+                                    <th class="jnl-list-th">Account</th>
+                                    <th class="jnl-list-th"></th>
                                 </tr>
                             </thead>
                             <tbody id="journal-trade-list-body"></tbody>
@@ -952,9 +955,9 @@
                     <div class="card-header">
                         <div>
                             <h3 class="card-title" id="journal-editor-title">Trade Reflection</h3>
-                            <p style="color:var(--text-primary);font-size:15px;font-weight:600;margin-top:6px;" id="journal-editor-subtitle"></p>
+                            <p class="jnl-editor-subtitle" id="journal-editor-subtitle"></p>
                         </div>
-                        <div style="display:flex;gap:8px;align-items:center;">
+                        <div class="nt-head-actions">
                             <span id="jnl-autosave-status" class="autosave-status" title="Changes save automatically on this computer."></span>
                             <button type="button" class="btn btn-secondary btn-small" id="jnl-unlock-btn" onclick="jnlRequestUnlock()" title="Execution fields are locked to protect the original trade record. Unlock to correct price, size, or timestamps.">🔒 Unlock Fields</button>
                             <button type="button" class="btn btn-secondary btn-small" onclick="openJournalAI('trade')">AI Analysis</button>
@@ -1020,94 +1023,99 @@
                             <div class="form-group"><label>Entry Time</label><input type="datetime-local" id="jnl-entry-time" disabled class="jnl-locked-field"></div>
                             <div class="form-group"><label>Exit Time</label><input type="datetime-local" id="jnl-exit-time" disabled class="jnl-locked-field"></div>
                             <div class="form-group"><label>Commission &amp; Fees</label><input type="number" id="jnl-commission-fees" disabled class="jnl-locked-field" placeholder="0.00" step="0.01" min="0" oninput="_jnlRecalcMetrics()"></div>
-                            <div class="form-group"><label>Strategy</label>
-                                <select id="jnl-setup-type" onchange="_jnlLoadStrategyRules(this.value)"><option value="">Select strategy...</option></select>
-                            </div>
-                            <div></div>
                         </div>
 
-                        <!-- Strategy rules checklist -->
-                        <div id="jnl-strategy-rules-checklist" style="display:none;background:var(--bg-secondary);padding:14px 16px;border-radius:8px;margin-bottom:12px;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                                <h4 style="font-size:14px;margin:0;">Strategy Rules</h4>
-                                <div id="jnl-strategy-score" style="font-size:14px;font-weight:600;"></div>
-                            </div>
-                            <div id="jnl-rules-list"></div>
-                        </div>
-
-                        <!-- Trade Grade pill selector -->
-                        <div class="form-group">
-                            <label>Trade Grade</label>
-                            <input type="hidden" id="jnl-trade-grade" value="">
-                            <div id="jnl-grade-pills" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;"></div>
-                        </div>
+                        <!-- Fills (#jnl-fills-section) are inserted here by _jnlRenderFillsSection. -->
 
                         <!-- Planning + Metrics side-by-side -->
-                        <div class="jnl-planning-metrics-row">
+                        <div class="jnl-planning-metrics-row nt-section">
 
                             <!-- Left: Combined Planned Levels -->
                             <div class="tf-planning-group">
                                 <div class="form-group">
-                                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-                                        <label style="margin:0;">Planned Levels</label>
-                                        <button type="button" class="btn btn-small btn-primary" onclick="addPlanRow('jnl-plan-rows')" style="padding:2px 8px;font-size:12px;line-height:1.6;">+</button>
+                                    <div class="nt-panel-head">
+                                        <label class="nt-section-title">Planned Levels</label>
+                                        <button type="button" class="btn btn-small btn-primary nt-add-btn" onclick="addPlanRow('jnl-plan-rows')">+</button>
                                     </div>
                                     <div id="jnl-plan-rows"></div>
                                 </div>
                             </div>
 
-                            <!-- Right: Calculated Metrics -->
-                            <div style="background:var(--bg-secondary);border-radius:8px;padding:12px 16px;border:1px solid var(--border);">
-                                <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Calculated Metrics</div>
-                                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Initial Target</div><div id="jnl-metric-initial-target" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Trade Risk</div><div id="jnl-metric-trade-risk" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Total $ Risk</div><div id="jnl-metric-total-risk" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Drawdown</div><div id="jnl-metric-drawdown" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Planned R</div><div id="jnl-metric-planned-r" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Realized R</div><div id="jnl-metric-realized-r" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Realized P&amp;L</div><div id="jnl-metric-realized-pnl" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Net P&amp;L</div><div id="jnl-pnl-net" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Net % Gain</div><div id="jnl-pnl-net-pct" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Gross P&amp;L</div><div id="jnl-pnl-gross" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Gross % Gain</div><div id="jnl-pnl-gross-pct" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Fees<span id="jnl-fee-source-badge" style="display:none;font-size:10px;margin-left:4px;padding:1px 5px;border-radius:3px;background:var(--bg-tertiary, #e5e7eb);color:var(--text-secondary);"></span></div><div id="jnl-pnl-fees" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
-                                    <div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Runup</div><div id="jnl-metric-runup" style="font-size:14px;font-weight:600;color:var(--text-primary);">--</div></div>
+                            <!-- Right: Calculated Metrics. Seven rows per column: planned
+                                 figures and realized R/P&L left, net/gross/fees right. -->
+                            <div class="nt-metrics">
+                                <div class="nt-section-title">Calculated Metrics</div>
+                                <div class="nt-metrics-list">
+                                    <div class="nt-metric"><div class="nt-metric-label">Initial Target</div><div id="jnl-metric-initial-target" class="nt-metric-value">--</div></div>
+                                    <div class="nt-metric"><div class="nt-metric-label">Trade Risk</div><div id="jnl-metric-trade-risk" class="nt-metric-value">--</div></div>
+                                    <div class="nt-metric"><div class="nt-metric-label">Total $ Risk</div><div id="jnl-metric-total-risk" class="nt-metric-value">--</div></div>
+                                    <div class="nt-metric"><div class="nt-metric-label">Drawdown</div><div id="jnl-metric-drawdown" class="nt-metric-value">--</div></div>
+                                    <div class="nt-metric"><div class="nt-metric-label">Planned R</div><div id="jnl-metric-planned-r" class="nt-metric-value">--</div></div>
+                                    <div class="nt-metric"><div class="nt-metric-label">Realized R</div><div id="jnl-metric-realized-r" class="nt-metric-value">--</div></div>
+                                    <div class="nt-metric"><div class="nt-metric-label">Realized P&amp;L</div><div id="jnl-metric-realized-pnl" class="nt-metric-value">--</div></div>
+                                    <div class="nt-metric"><div class="nt-metric-label">Net P&amp;L</div><div id="jnl-pnl-net" class="nt-metric-value">--</div></div>
+                                    <div class="nt-metric"><div class="nt-metric-label">Net % Gain</div><div id="jnl-pnl-net-pct" class="nt-metric-value">--</div></div>
+                                    <div class="nt-metric"><div class="nt-metric-label">Gross P&amp;L</div><div id="jnl-pnl-gross" class="nt-metric-value">--</div></div>
+                                    <div class="nt-metric"><div class="nt-metric-label">Gross % Gain</div><div id="jnl-pnl-gross-pct" class="nt-metric-value">--</div></div>
+                                    <div class="nt-metric"><div class="nt-metric-label">Fees<span id="jnl-fee-source-badge" class="jnl-fee-badge" style="display:none;"></span></div><div id="jnl-pnl-fees" class="nt-metric-value">--</div></div>
+                                    <div class="nt-metric"><div class="nt-metric-label">Runup</div><div id="jnl-metric-runup" class="nt-metric-value">--</div></div>
                                 </div>
                             </div>
 
                         </div>
 
+                        <!-- Trade Grade pill selector -->
+                        <div class="form-group nt-section">
+                            <label class="nt-section-title">Trade Grade</label>
+                            <input type="hidden" id="jnl-trade-grade" value="">
+                            <div id="jnl-grade-pills" class="nt-grade-pills"></div>
+                        </div>
+
                         <!-- Tags builder -->
                         <div class="form-group">
-                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-                                <label style="margin:0;">Tags</label>
-                                <div style="display:flex;gap:8px;align-items:center;">
+                            <div class="nt-panel-head">
+                                <label class="nt-section-title">Tags</label>
+                                <div class="nt-head-actions">
                                     <button type="button" class="btn btn-secondary btn-small" onclick="activateSection('settings');switchSettingsTab('settings-tags')">Manage Tags</button>
-                                    <button type="button" class="btn btn-primary btn-small" onclick="addJnlTagRow()" style="padding:2px 8px;font-size:12px;line-height:1.6;">+</button>
+                                    <button type="button" class="btn btn-primary btn-small nt-add-btn" onclick="addJnlTagRow()">+</button>
                                 </div>
                             </div>
                             <div id="jnl-tag-rows"></div>
                         </div>
 
-                        <!-- Notes section -->
-                        <div style="border-top:1px solid var(--border);margin:20px 0 16px;"></div>
-                        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
-                            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em;">Reflection</div>
-                            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+                        <!-- Strategy: collapsible card, as on New Trade. The header holds the
+                             select and score; _jnlLoadStrategyRules shows/hides the rules body. -->
+                        <div class="nt-section">
+                            <div class="nt-strategy-card">
+                                <div class="nt-panel-head nt-strategy-head">
+                                    <label class="nt-section-title" for="jnl-setup-type">Strategy</label>
+                                    <select id="jnl-setup-type" onchange="_jnlLoadStrategyRules(this.value)"><option value="">Select strategy...</option></select>
+                                    <div id="jnl-strategy-score" class="nt-rules-score"></div>
+                                </div>
+                                <div id="jnl-strategy-rules-checklist" class="nt-rules-panel" style="display:none;">
+                                    <div id="jnl-rules-list"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Reflection -->
+                        <div class="nt-reflection-sep"></div>
+                        <div class="nt-reflection-head">
+                            <div class="nt-section-title">Reflection</div>
+                            <div class="nt-reflection-actions">
                                 <div class="cleanup-controls">
-                                <span id="jnl-cleanup-msg" style="font-size:12px;color:var(--text-secondary);"></span>
-                                <select id="jnl-cleanup-format" data-note-cleanup-format class="jnl-tb-select" style="height:30px;padding:2px 6px;font-size:13px;" title="Clean-up format" aria-label="Clean-up format"
+                                <span id="jnl-cleanup-msg" class="nt-cleanup-msg"></span>
+                                <select id="jnl-cleanup-format" data-note-cleanup-format class="jnl-tb-select nt-toolbar-select" title="Clean-up format" aria-label="Clean-up format"
                                     onchange="noteCleanupFormatChange(this.value)">
                                     <option value="bullets">Bullets</option>
                                     <option value="paragraphs">Paragraphs</option>
                                 </select>
-                                <button type="button" class="btn btn-secondary btn-small" id="jnl-cleanup-btn" style="white-space:nowrap;" onclick="jnlCleanUpAI()">Clean Up with AI</button>
+                                <button type="button" class="btn btn-secondary btn-small nt-nowrap" id="jnl-cleanup-btn" onclick="jnlCleanUpAI()">Clean Up with AI</button>
                                 </div>
-                                <select id="jnl-template-select" class="jnl-tb-select" style="width:175px;max-width:175px;height:30px;padding:2px 6px;font-size:13px;" onchange="applyNoteTemplate(this.value);this.value=''" title="Apply a template">
+                                <select id="jnl-template-select" class="jnl-tb-select nt-toolbar-select nt-template-select" onchange="applyNoteTemplate(this.value);this.value=''" title="Apply a template">
                                     <option value="">Select template…</option>
                                 </select>
-                                <button type="button" class="btn btn-secondary btn-small" style="white-space:nowrap;" onclick="openNoteTemplateManager()">Templates</button>
+                                <button type="button" class="btn btn-secondary btn-small nt-nowrap" onclick="openNoteTemplateManager()">Templates</button>
                             </div>
                         </div>
                         <div class="jnl-editor-wrap" id="jnl-editor-wrap">
@@ -1120,8 +1128,8 @@
                                 oninput="jnlOnInput()"></div>
                         </div>
 
-                        <button type="submit" class="btn btn-success">Save Reflection</button>
-                        <div id="jnl-open-hint" style="display:none; margin-top:8px; font-size:13px; color:var(--danger, #f87171);"></div>
+                        <button type="submit" class="btn btn-success btn-primary nt-save-btn">Save Reflection</button>
+                        <div id="jnl-open-hint" class="jnl-open-hint" style="display:none;"></div>
                     </form>
                 </div>
 
@@ -1134,8 +1142,8 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Trading Strategies</h3>
-                        <div style="display:flex;align-items:center;gap:8px;">
-                            <div style="position:relative;">
+                        <div class="card-header-actions">
+                            <div class="strat-fav-wrap">
                                 <button class="btn btn-secondary btn-small" onclick="toggleAddFavoriteMenu()" id="strat-add-fav-btn" title="Restore unfavorited strategies to the main list">+ Add Favorite</button>
                                 <div id="strat-add-fav-menu" class="strat-fav-menu"></div>
                             </div>
@@ -1172,7 +1180,7 @@
                             <div class="form-group se-basics-name">
                                 <label>Strategy Name</label>
                                 <input type="text" id="strategy-name" required placeholder="e.g., Gap N Go, 3 Min Flag, VWAP Bounce">
-                                <div class="se-color-row" style="margin-top:8px;">
+                                <div class="se-color-row">
                                     <button type="button" class="color-btn selected" data-color="#3b82f6" style="background:#3b82f6;" onclick="selectStrategyColor('#3b82f6')"></button>
                                     <button type="button" class="color-btn" data-color="#10b981" style="background:#10b981;" onclick="selectStrategyColor('#10b981')"></button>
                                     <button type="button" class="color-btn" data-color="#f59e0b" style="background:#f59e0b;" onclick="selectStrategyColor('#f59e0b')"></button>
@@ -1182,13 +1190,13 @@
                                 </div>
                             </div>
                             <div class="form-group se-basics-desc">
-                                <label>Description <span style="color:var(--text-secondary);font-weight:400;">(optional)</span></label>
+                                <label>Description <span class="label-note">(optional)</span></label>
                                 <textarea id="strategy-description" rows="2" placeholder="Describe your strategy overview"></textarea>
                             </div>
                             <div class="form-group se-basics-meta" id="se-meta-info" style="display:none;">
                                 <label>Created By</label>
                                 <div class="se-meta-value" id="se-created-by"></div>
-                                <div id="se-system-note" style="display:none;margin-top:6px;font-size:12px;color:var(--text-secondary);">System strategy. Saving a change makes it your own strategy.</div>
+                                <div id="se-system-note" class="field-hint" style="display:none;">System strategy. Saving a change makes it your own strategy.</div>
                             </div>
                         </div>
                     </div>
@@ -1335,9 +1343,9 @@
                                 <button class="snap-pill"        data-minsample="20" onclick="setSetupsMinSample(20,this)">20+ trades</button>
                             </div>
                         </div>
-                        <div class="snap-filter-group">
-                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-secondary);">
-                                <input type="checkbox" id="setups-hide-no-setup" onchange="setSetupsHideNoSetup(this.checked)" style="cursor:pointer;accent-color:var(--primary);">
+                        <div class="snap-filter-group trd-check-group">
+                            <label class="snap-filter-label trd-check">
+                                <input type="checkbox" class="trd-check-input" id="setups-hide-no-setup" onchange="setSetupsHideNoSetup(this.checked)">
                                 Hide "No Strategy"
                             </label>
                         </div>
@@ -1570,15 +1578,15 @@
                                 <h3 class="card-title">Prompt Library</h3>
                                 <span id="ai-lib-trade-count" class="ai-trade-count-meta"></span>
                             </div>
-                            <p style="color:var(--text-secondary);font-size:13px;margin-top:4px;">Browse global prompts or manage your own. Run any prompt against your trade data.</p>
+                            <p class="card-subtitle">Browse global prompts or manage your own. Run any prompt against your trade data.</p>
                         </div>
                         <button class="btn btn-primary btn-small" onclick="AILibrary.openEditor(null)">+ New Prompt</button>
                     </div>
 
                     <!-- Filter bar -->
                     <div class="ai-filter-bar">
-                        <input type="text" id="ai-lib-search" placeholder="Search prompts…" oninput="AILibrary.onSearch(this.value)" style="min-width:180px;flex:1 1 180px;">
-                        <select id="ai-lib-trade-cat" onchange="AILibrary.onTradeFilterChange('category',this.value)">
+                        <input type="text" id="ai-lib-search" class="ai-filter-search" placeholder="Search prompts…" oninput="AILibrary.onSearch(this.value)">
+                        <select id="ai-lib-trade-cat" class="snap-sel" onchange="AILibrary.onTradeFilterChange('category',this.value)">
                             <option value="All">All Categories</option>
                             <option value="Stock">Stock</option>
                             <option value="Option">Option</option>
@@ -1587,28 +1595,28 @@
                             <option value="Bond">Bond</option>
                             <option value="IPO">IPO</option>
                         </select>
-                        <select id="ai-lib-trade-style" onchange="AILibrary.onTradeFilterChange('style',this.value)">
+                        <select id="ai-lib-trade-style" class="snap-sel" onchange="AILibrary.onTradeFilterChange('style',this.value)">
                             <option value="All">All Styles</option>
                             <option value="Day Trade">Day Trade</option>
                             <option value="Swing">Swing</option>
                             <option value="Investing">Investing</option>
                             <option value="Position">Position</option>
                         </select>
-<select id="ai-lib-trade-time" onchange="AILibrary.onTradeFilterChange('timeframe',this.value)">
+<select id="ai-lib-trade-time" class="snap-sel" onchange="AILibrary.onTradeFilterChange('timeframe',this.value)">
                             <option value="All">All Time</option>
                             <option value="Today">Today</option>
                             <option value="Week">This Week</option>
                             <option value="Month">This Month</option>
                             <option value="Year">This Year</option>
                         </select>
-                        <select id="ai-lib-createdby" onchange="AILibrary.onFilterChange('createdBy',this.value)">
+                        <select id="ai-lib-createdby" class="snap-sel" onchange="AILibrary.onFilterChange('createdBy',this.value)">
                             <option value="all">All Creators</option>
                             <option value="denarii">Denarii</option>
                             <option value="mine">My Prompts</option>
                         </select>
                         <div class="ai-filter-bar-right">
                             <button id="ai-lib-fav-toggle" class="ai-fav-toggle" onclick="AILibrary.toggleFavoritesFilter()" title="Favorites only">★ Favorites</button>
-                            <select id="ai-lib-sort" onchange="AILibrary.onSortChange(this.value)" style="flex:0 1 160px;min-width:130px;">
+                            <select id="ai-lib-sort" class="snap-sel" onchange="AILibrary.onSortChange(this.value)">
                                 <option value="global-first">Global First</option>
                                 <option value="my-first">My Prompts First</option>
                                 <option value="favorites">Favorites First</option>
@@ -1624,12 +1632,12 @@
             <!-- ═══ RUN ANALYSIS ═══ -->
             <div class="tab-content" id="ai-run">
                 <div class="card">
-                    <div id="ai-run-key-warn" class="alert alert-warning" style="display:none;margin-bottom:20px;">
+                    <div id="ai-run-key-warn" class="alert alert-warning" style="display:none;">
                         No Gemini API key configured. Add your key in Settings → Integrations to enable AI analysis.
                     </div>
 
                     <!-- Filters mounted by DenariiFilters.mountFilterBar() in ai-run.js -->
-                    <div class="snap-filter-bar" id="ai-run-filter-bar" style="margin-bottom:20px;"></div>
+                    <div class="snap-filter-bar" id="ai-run-filter-bar"></div>
 
                     <div class="ai-run-layout">
                         <!-- Config panel -->
@@ -1643,16 +1651,16 @@
 
                             <div class="form-group">
                                 <label>Prompt Text</label>
-                                <textarea id="ai-run-prompt-text" placeholder="Edit or write a prompt here…" style="min-height:120px;"></textarea>
+                                <textarea id="ai-run-prompt-text" placeholder="Edit or write a prompt here…"></textarea>
                             </div>
 
-                            <div id="ai-run-trade-count" style="display:flex;margin-bottom:14px;padding:8px 12px;background:var(--bg-tertiary,rgba(255,255,255,0.03));border:1px solid var(--border,rgba(255,255,255,0.06));border-radius:6px;font-size:13px;color:var(--text-secondary);align-items:center;justify-content:space-between;">
+                            <div id="ai-run-trade-count">
                                 <span>Trades Selected<span id="ai-run-trade-count-account"></span></span>
-                                <span id="ai-run-trade-count-val" style="font-weight:600;"></span>
+                                <span id="ai-run-trade-count-val"></span>
                             </div>
 
                             <button id="ai-run-btn" class="btn btn-primary" onclick="AIRun.execute()">Run Analysis</button>
-                            <div id="ai-run-status" style="display:none;font-size:13px;margin-top:10px;"></div>
+                            <div id="ai-run-status" style="display:none;"></div>
                         </div>
 
                         <!-- Output panel -->
@@ -1666,7 +1674,7 @@
                                 </div>
                             </div>
 
-                            <div id="ai-run-data-summary" style="display:none;margin-bottom:10px;padding:8px 12px;background:var(--bg-tertiary,rgba(255,255,255,0.03));border-radius:6px;border:1px solid var(--border,rgba(255,255,255,0.06));"></div>
+                            <div id="ai-run-data-summary" style="display:none;"></div>
 
                             <div id="ai-run-output-placeholder" class="ai-output-placeholder">
                                 <div class="ai-output-placeholder-icon">✨</div>
@@ -1676,7 +1684,7 @@
 
                             <div id="ai-run-output-loading" class="ai-output-loading" style="display:none;">
                                 <div class="ai-output-loading-spinner"></div>
-                                <p style="margin-top:14px;color:var(--text-secondary);">Analysing with Gemini… <span id="ai-run-elapsed" style="opacity:0.55;font-size:12px;"></span></p>
+                                <p class="ai-output-loading-text">Analysing with Gemini… <span id="ai-run-elapsed" class="ai-output-elapsed"></span></p>
                             </div>
 
                             <div id="ai-run-output-error" class="ai-output-error" style="display:none;"></div>
@@ -1706,28 +1714,28 @@
 
             <!-- ═══ SETTINGS PAGE ═══ -->
             <div class="tab-content" id="settings">
-                <div style="display:grid;grid-template-columns:220px 1fr;gap:24px;min-height:70vh;">
+                <div class="settings-layout">
                     <!-- Settings Sidebar -->
-                    <div style="display:flex;flex-direction:column;">
-                        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-secondary);margin-bottom:10px;padding:0 12px;">User</div>
+                    <div class="settings-sidebar">
+                        <div class="settings-nav-label">User</div>
                         <button class="settings-nav-item active" data-settings-tab="settings-profile" onclick="switchSettingsTab('settings-profile')">Profile</button>
                         <button class="settings-nav-item" data-settings-tab="settings-security" onclick="switchSettingsTab('settings-security')">Security</button>
 
-                        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-secondary);margin:20px 0 10px;padding:0 12px;">General</div>
+                        <div class="settings-nav-label">General</div>
                         <button class="settings-nav-item" data-settings-tab="settings-broker-accounts" onclick="switchSettingsTab('settings-broker-accounts')">Broker Accounts</button>
                         <button class="settings-nav-item" data-settings-tab="settings-tags" onclick="switchSettingsTab('settings-tags')">Tags Management</button>
                         <button class="settings-nav-item" data-settings-tab="settings-integrations" onclick="switchSettingsTab('settings-integrations')">Integrations</button>
                         <button class="settings-nav-item" data-settings-tab="settings-conflicts" style="display:none;" onclick="switchSettingsTab('settings-conflicts')">Conflict Copies</button>
                         <button class="settings-nav-item" data-settings-tab="settings-data" onclick="switchSettingsTab('settings-data')">Data</button>
 
-                        <div id="settings-version-label" style="margin-top:auto;padding:16px 12px 0;font-size:11px;color:var(--text-secondary);line-height:1.6;opacity:0.7;white-space:pre-line;"></div>
+                        <div id="settings-version-label" class="settings-version"></div>
                     </div>
 
                     <!-- Settings Content -->
-                    <div>
+                    <div class="settings-content">
                         <!-- PROFILE -->
                         <div class="settings-panel active" id="settings-profile">
-                            <div style="display:grid;grid-template-columns:220px 1fr;gap:32px;">
+                            <div class="settings-profile-grid">
                                 <!-- Profile Picture Column -->
                                 <div style="text-align:center;">
                                     <div id="settings-avatar" style="width:120px;height:120px;border-radius:50%;background:var(--bg-tertiary);border:3px solid var(--border);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:42px;font-weight:700;color:var(--primary);overflow:hidden;">
@@ -1743,8 +1751,8 @@
                                 </div>
                                 <!-- Profile Details Column -->
                                 <div>
-                                    <h3 style="margin-bottom:20px;">Profile details</h3>
-                                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                                    <h3 class="settings-title">Profile details</h3>
+                                    <div class="field-row-2">
                                         <div class="form-group">
                                             <label>First name</label>
                                             <input type="text" id="settings-firstname" placeholder="First name">
@@ -1756,8 +1764,8 @@
                                     </div>
                                     <div class="form-group">
                                         <label>Username</label>
-                                        <input type="text" id="settings-username" placeholder="Username" disabled style="opacity:0.6;cursor:not-allowed;">
-                                        <small style="color:var(--text-secondary);font-size:11px;">Username cannot be changed.</small>
+                                        <input type="text" id="settings-username" placeholder="Username" disabled>
+                                        <small class="field-hint">Username cannot be changed.</small>
                                     </div>
                                     <div class="form-group">
                                         <label>Time zone</label>
@@ -1808,24 +1816,24 @@
 
                         <!-- SECURITY -->
                         <div class="settings-panel" id="settings-security">
-                            <h3 style="margin-bottom:20px;">Change Password</h3>
+                            <h3 class="settings-title">Change Password</h3>
                             <div class="form-group">
                                 <label>Current Password</label>
-                                <div style="position:relative;">
+                                <div class="pw-field">
                                     <input type="password" id="settings-current-pw" placeholder="Enter current password">
                                     <button type="button" class="pw-toggle" onclick="togglePasswordVis('settings-current-pw',this)" tabindex="-1">👁</button>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label>New Password</label>
-                                <div style="position:relative;">
+                                <div class="pw-field">
                                     <input type="password" id="settings-new-pw" placeholder="Min 8 characters">
                                     <button type="button" class="pw-toggle" onclick="togglePasswordVis('settings-new-pw',this)" tabindex="-1">👁</button>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label>Confirm New Password</label>
-                                <div style="position:relative;">
+                                <div class="pw-field">
                                     <input type="password" id="settings-confirm-pw" placeholder="Re-enter new password">
                                     <button type="button" class="pw-toggle" onclick="togglePasswordVis('settings-confirm-pw',this)" tabindex="-1">👁</button>
                                 </div>
@@ -1834,38 +1842,38 @@
                             <button class="btn btn-primary" onclick="changePassword()">Update Password</button>
 
                             <!-- ── Automatic sign-in (shown only when this computer can protect the key) ── -->
-                            <div id="autosignin-section" style="display:none;margin-top:40px;padding-top:28px;border-top:1px solid var(--border);">
-                                <h3 style="margin-bottom:6px;">Automatic Sign-In</h3>
-                                <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px;">Anyone who can sign in to this Windows account will be able to open your journal. Backups still need your password.</p>
-                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;text-transform:none;letter-spacing:0;font-weight:400;">
-                                    <input type="checkbox" id="settings-autosignin" onchange="toggleAutoSignIn(this)" style="width:auto;padding:0;margin:0;cursor:pointer;accent-color:var(--primary);">
+                            <div id="autosignin-section" style="display:none;" class="settings-section">
+                                <h3 class="settings-title">Automatic Sign-In</h3>
+                                <p class="settings-desc">Anyone who can sign in to this Windows account will be able to open your journal. Backups still need your password.</p>
+                                <label class="settings-toggle">
+                                    <input type="checkbox" id="settings-autosignin" onchange="toggleAutoSignIn(this)">
                                     <span>Stay signed in on this computer</span>
                                 </label>
-                                <div id="settings-autosignin-note" style="display:none;margin-top:8px;color:var(--text-secondary);font-size:12px;"></div>
-                                <div id="settings-autosignin-msg" style="display:none;margin-top:12px;"></div>
+                                <div id="settings-autosignin-note" class="field-hint" style="display:none;"></div>
+                                <div id="settings-autosignin-msg" class="settings-msg" style="display:none;"></div>
                             </div>
 
                             <!-- ── Delete Account ── -->
-                            <div id="delete-account-section" style="display:none;margin-top:40px;padding-top:28px;border-top:1px solid var(--border);">
-                                <h3 style="margin-bottom:6px;color:var(--danger);">Delete Account</h3>
-                                <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px;">Permanently delete your account and all associated data. This action cannot be undone.</p>
-                                <button class="btn" style="background:var(--danger);color:#fff;border:none;" onclick="showDeleteAccountConfirm()">Delete My Account</button>
+                            <div id="delete-account-section" class="settings-danger-zone" style="display:none;">
+                                <h3 class="settings-title settings-title--danger">Delete Account</h3>
+                                <p class="settings-desc">Permanently delete your account and all associated data. This action cannot be undone.</p>
+                                <button class="btn btn-danger" onclick="showDeleteAccountConfirm()">Delete My Account</button>
                             </div>
 
                             <!-- ── Delete Account Confirmation (inline, hidden by default) ── -->
-                            <div id="delete-account-confirm" style="display:none;margin-top:24px;padding:20px;background:var(--bg-secondary);border:1px solid var(--danger);border-radius:12px;">
-                                <h4 style="margin:0 0 8px;color:var(--danger);">Confirm Account Deletion</h4>
-                                <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px;">Enter your current password to permanently delete your account and all data.</p>
+                            <div id="delete-account-confirm" class="settings-danger-confirm" style="display:none;">
+                                <h4 class="settings-subtitle settings-title--danger">Confirm Account Deletion</h4>
+                                <p class="settings-desc">Enter your current password to permanently delete your account and all data.</p>
                                 <div class="form-group" style="margin-bottom:12px;">
                                     <label>Current Password</label>
-                                    <div style="position:relative;">
+                                    <div class="pw-field">
                                         <input type="password" id="delete-account-pw" placeholder="Enter your password">
                                         <button type="button" class="pw-toggle" onclick="togglePasswordVis('delete-account-pw',this)" tabindex="-1">&#x1f441;</button>
                                     </div>
                                 </div>
                                 <div id="delete-account-msg" style="display:none;margin-bottom:12px;"></div>
-                                <div style="display:flex;gap:10px;">
-                                    <button class="btn" id="delete-account-btn" style="background:var(--danger);color:#fff;border:none;" onclick="deleteAccountAuthenticated()">Permanently Delete</button>
+                                <div class="settings-actions">
+                                    <button class="btn btn-danger" id="delete-account-btn" onclick="deleteAccountAuthenticated()">Permanently Delete</button>
                                     <button class="btn btn-secondary" onclick="hideDeleteAccountConfirm()">Cancel</button>
                                 </div>
                             </div>
@@ -1873,33 +1881,33 @@
 
                         <!-- TAGS MANAGEMENT -->
                         <div class="settings-panel" id="settings-broker-accounts">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+                            <div class="settings-panel-head">
                                 <div>
-                                    <h3 style="margin:0;">Broker Accounts</h3>
-                                    <p style="color:var(--text-secondary);font-size:13px;margin-top:4px;">Manage your brokerage accounts and assign trading styles.</p>
+                                    <h3 class="settings-title">Broker Accounts</h3>
+                                    <p class="card-subtitle">Manage your brokerage accounts and assign trading styles.</p>
                                 </div>
-                                <div style="display:flex;gap:8px;align-items:center;">
+                                <div class="settings-actions">
                                     <button class="btn btn-secondary btn-small" onclick="restoreDemoBroker()">Restore Demo</button>
                                     <button class="btn btn-primary btn-small" onclick="openBrokerAccountModal()">+ Add Account</button>
                                 </div>
                             </div>
                             <div id="broker-accounts-list"></div>
-                            <div id="broker-accounts-empty" style="display:none;text-align:center;padding:40px;color:var(--text-secondary);">
+                            <div id="broker-accounts-empty" class="settings-empty" style="display:none;">
                                 <p>No broker accounts yet.</p>
                                 <p style="font-size:13px;">Add your brokerage accounts to organize trades by broker and trading style.</p>
                             </div>
                         </div>
 
                         <div class="settings-panel" id="settings-tags">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
-                                <h3 style="margin:0;">Tags Management</h3>
+                            <div class="settings-panel-head">
+                                <h3 class="settings-title">Tags Management</h3>
                                 <button class="btn btn-primary btn-small" onclick="showAddTagForm()">+ Add Tag</button>
                             </div>
 
                             <!-- Add/Edit Tag Form (hidden by default) -->
-                            <div id="tag-form-card" class="card" style="display:none;margin-bottom:20px;border-color:var(--primary);">
-                                <h4 id="tag-form-title" style="margin-bottom:14px;">Add New Tag</h4>
-                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                            <div id="tag-form-card" class="card settings-subcard" style="display:none;">
+                                <h4 id="tag-form-title" class="settings-subtitle">Add New Tag</h4>
+                                <div class="field-row-2 field-row-gap">
                                     <div class="form-group" style="margin:0;">
                                         <label>Tag Name</label>
                                         <input type="text" id="tag-name-input" placeholder="e.g. breakout entry">
@@ -1914,22 +1922,22 @@
                                     <input type="text" id="tag-desc-input" placeholder="Short description">
                                 </div>
                                 <div id="tag-form-msg" style="display:none;margin-bottom:10px;"></div>
-                                <div style="display:flex;gap:10px;">
+                                <div class="settings-actions">
                                     <button class="btn btn-primary btn-small" onclick="saveTag()">Save Tag</button>
                                     <button class="btn btn-secondary btn-small" onclick="cancelTagForm()">Cancel</button>
                                 </div>
                             </div>
 
                             <!-- Category Management (hidden by default) -->
-                            <div id="category-manage-card" class="card" style="display:none;margin-bottom:20px;border-color:var(--primary);">
-                                <h4 style="margin-bottom:14px;">Manage Categories</h4>
+                            <div id="category-manage-card" class="card settings-subcard" style="display:none;">
+                                <h4 class="settings-subtitle">Manage Categories</h4>
                                 <div id="category-list" style="margin-bottom:14px;"></div>
                                 <div style="display:flex;gap:10px;align-items:end;">
                                     <div class="form-group" style="margin:0;flex:1;">
                                         <label>New Category Name</label>
                                         <input type="text" id="new-category-input" placeholder="e.g. Risk Management">
                                     </div>
-                                    <button class="btn btn-primary btn-small" style="height:38px;" onclick="addCategory()">Add</button>
+                                    <button class="btn btn-primary btn-small settings-field-btn" onclick="addCategory()">Add</button>
                                 </div>
                                 <div id="category-form-msg" style="display:none;margin-top:10px;"></div>
                                 <div style="margin-top:14px;">
@@ -1968,41 +1976,41 @@
 
                         <!-- INTEGRATIONS -->
                         <div class="settings-panel" id="settings-integrations">
-                            <h3 style="margin-bottom:8px;">Gemini API Key</h3>
-                            <p style="color:var(--text-secondary);font-size:13px;margin-bottom:20px;">AI features need your own Gemini API key. There is no built-in key. Your key is stored encrypted on this computer.</p>
+                            <h3 class="settings-title">Gemini API Key</h3>
+                            <p class="settings-desc">AI features need your own Gemini API key. There is no built-in key. Your key is stored encrypted on this computer.</p>
                             <div class="form-group">
-                                <label>Personal API Key <span id="ai-key-status-badge" style="font-size:12px;margin-left:8px;"></span></label>
-                                <div style="position:relative;">
+                                <label>Personal API Key <span id="ai-key-status-badge" class="settings-status-badge"></span></label>
+                                <div class="pw-field">
                                     <input type="password" id="settings-integrations-key" placeholder="Paste your Gemini API key…" autocomplete="off">
                                     <button type="button" class="pw-toggle" onclick="togglePasswordVis('settings-integrations-key',this)" tabindex="-1">👁</button>
                                 </div>
-                                <small style="color:var(--text-secondary);font-size:11px;">Required for AI features. After saving, your key will not be shown again. Removing it turns AI features off.</small>
+                                <small class="field-hint">Required for AI features. After saving, your key will not be shown again. Removing it turns AI features off.</small>
                             </div>
                             <div id="settings-integrations-msg" style="display:none;margin-bottom:12px;"></div>
-                            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                            <div class="settings-actions">
                                 <button class="btn btn-primary" onclick="saveGeminiApiKey()">Save Key</button>
                                 <button class="btn btn-secondary" id="settings-integrations-remove-btn" onclick="removeGeminiApiKey()" style="display:none;">Remove Key</button>
                             </div>
-                            <div class="form-group" style="margin-top:16px;">
+                            <div class="form-group settings-field-spaced">
                                 <label for="settings-integrations-model">Model</label>
                                 <select id="settings-integrations-model" onchange="saveGeminiModel()">
                                     <option value="gemini-flash-lite-latest">gemini-flash-lite-latest</option>
                                 </select>
-                                <small style="color:var(--text-secondary);font-size:11px;">Flash-Lite is fastest and most reliable. Larger models may give deeper analysis but can be slow or busy; Denarii falls back to Flash-Lite automatically.</small>
+                                <small class="field-hint">Flash-Lite is fastest and most reliable. Larger models may give deeper analysis but can be slow or busy; Denarii falls back to Flash-Lite automatically.</small>
                             </div>
 
-                            <h3 style="margin:32px 0 8px;">Twelve Data API Key</h3>
-                            <p style="color:var(--text-secondary);font-size:13px;margin-bottom:20px;">Trade charts load candles from Twelve Data using your own key. The free plan is enough for charts. Your key is stored encrypted on this computer. <a href="https://twelvedata.com/pricing" target="_blank" rel="noopener noreferrer">Get a free key</a></p>
+                            <h3 class="settings-title settings-title--spaced">Twelve Data API Key</h3>
+                            <p class="settings-desc">Trade charts load candles from Twelve Data using your own key. The free plan is enough for charts. Your key is stored encrypted on this computer. <a href="https://twelvedata.com/pricing" target="_blank" rel="noopener noreferrer">Get a free key</a></p>
                             <div class="form-group">
-                                <label>Personal API Key <span id="twelvedata-key-status-badge" style="font-size:12px;margin-left:8px;"></span></label>
-                                <div style="position:relative;">
+                                <label>Personal API Key <span id="twelvedata-key-status-badge" class="settings-status-badge"></span></label>
+                                <div class="pw-field">
                                     <input type="password" id="settings-twelvedata-key" placeholder="Paste your Twelve Data API key…" autocomplete="off">
                                     <button type="button" class="pw-toggle" onclick="togglePasswordVis('settings-twelvedata-key',this)" tabindex="-1">👁</button>
                                 </div>
-                                <small style="color:var(--text-secondary);font-size:11px;">Required for charts. After saving, your key will not be shown again.</small>
+                                <small class="field-hint">Required for charts. After saving, your key will not be shown again.</small>
                             </div>
                             <div id="settings-twelvedata-msg" style="display:none;margin-bottom:12px;"></div>
-                            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                            <div class="settings-actions">
                                 <button class="btn btn-primary" onclick="saveTwelveDataApiKey()">Save Key</button>
                                 <button class="btn btn-secondary" id="settings-twelvedata-remove-btn" onclick="removeTwelveDataApiKey()" style="display:none;">Remove Key</button>
                             </div>
@@ -2010,10 +2018,10 @@
 
                         <!-- CONFLICT COPIES -->
                         <div class="settings-panel" id="settings-conflicts">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+                            <div class="settings-panel-head">
                                 <div>
-                                    <h3 style="margin:0;">Conflict Copies</h3>
-                                    <p style="color:var(--text-secondary);font-size:13px;margin-top:4px;">Your version of an item, kept in this browser when a newer cloud version replaced it.</p>
+                                    <h3 class="settings-title">Conflict Copies</h3>
+                                    <p class="card-subtitle">Your version of an item, kept in this browser when a newer cloud version replaced it.</p>
                                 </div>
                                 <button class="btn btn-secondary btn-small" id="settings-conflicts-clear-btn" onclick="openClearConflictCopies()" disabled>Clear all</button>
                             </div>
@@ -2022,15 +2030,15 @@
                         </div>
 
                         <div class="settings-panel" id="settings-data">
-                            <h3 style="margin-bottom:6px;">Data</h3>
-                            <p style="color:var(--text-secondary);font-size:13px;margin-bottom:20px;">Your data is stored only on this computer. Keep a backup somewhere safe, such as a USB drive or cloud folder. Your journal and API keys are encrypted with your password; account names are not.</p>
-                            <div id="settings-data-msg" style="display:none;margin-bottom:12px;word-break:break-all;"></div>
-                            <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+                            <h3 class="settings-title">Data</h3>
+                            <p class="settings-desc">Your data is stored only on this computer. Keep a backup somewhere safe, such as a USB drive or cloud folder. Your journal and API keys are encrypted with your password; account names are not.</p>
+                            <div id="settings-data-msg" style="display:none;"></div>
+                            <div class="settings-actions settings-actions--spaced">
                                 <button class="btn btn-primary" id="settings-data-backup-btn" onclick="backupAllData()">Back up all data (.sqlite)</button>
                                 <button class="btn btn-secondary" id="settings-data-restore-btn" onclick="restoreAllData()">Restore from backup</button>
                                 <button class="btn btn-secondary" onclick="openBackupsFolder()">Open backups folder</button>
                             </div>
-                            <p id="settings-data-info" style="color:var(--text-secondary);font-size:13px;line-height:1.6;white-space:pre-line;word-break:break-all;"></p>
+                            <p id="settings-data-info" class="settings-data-info"></p>
                         </div>
 
                     </div>
@@ -2375,12 +2383,12 @@
 
                         <section class="help-section" id="help-legal" style="display:none;">
                             <h3 class="card-title">Legal Documents</h3>
-                            <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px;">The following documents govern your use of Denarii. They were accepted when you created your account or last updated your legal acceptance.</p>
-                            <div id="help-legal-content" style="font-size:13px;line-height:1.7;">
+                            <p class="settings-desc">The following documents govern your use of Denarii. They were accepted when you created your account or last updated your legal acceptance.</p>
+                            <div id="help-legal-content" class="help-legal-content">
                                 <!-- Populated dynamically from LEGAL_BUNDLE by renderLegalHelpContent() -->
                             </div>
-                            <p style="color:var(--text-secondary);font-size:12px;margin-top:16px;">Copyright © 2026 mountytechWV. Denarii is free software under the GNU GPL v3 or later. It comes with no warranty. Source: <a href="https://github.com/mountytechWV/Denarii-local" target="_blank" rel="noopener noreferrer">https://github.com/mountytechWV/Denarii-local</a></p>
-                            <p style="color:var(--text-secondary);font-size:12px;margin-top:8px;">Trade charts use TradingView Lightweight Charts™, Copyright © 2023 TradingView, Inc. (<a href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer">tradingview.com</a>), under the Apache License 2.0.</p>
+                            <p id="help-license-credit" class="help-credit help-credit--first">Copyright © 2026 mountytechWV. Denarii is free software under the GNU GPL v3 or later. It comes with no warranty. Source: <a href="https://github.com/mountytechWV/Denarii-local" target="_blank" rel="noopener noreferrer">https://github.com/mountytechWV/Denarii-local</a></p>
+                            <p id="help-tradingview-credit" class="help-credit">Trade charts use TradingView Lightweight Charts™, Copyright © 2023 TradingView, Inc. (<a href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer">tradingview.com</a>), under the Apache License 2.0.</p>
                         </section>
                     </div>
                 </div>
@@ -2401,7 +2409,7 @@
     <div id="avatar-cropper-modal" class="modal" style="z-index:1200;">
         <div class="modal-content" style="max-width:460px;padding:28px;">
             <h2 style="margin-bottom:16px;">Adjust Profile Photo</h2>
-            <p style="color:var(--text-secondary);font-size:13px;margin-bottom:18px;">Drag to reposition. Use the slider to zoom in or out.</p>
+            <p class="modal-desc">Drag to reposition. Use the slider to zoom in or out.</p>
             <div id="cropper-viewport" style="width:280px;height:280px;margin:0 auto 18px;position:relative;border-radius:50%;overflow:hidden;border:3px solid var(--primary);background:var(--bg-primary);cursor:grab;touch-action:none;">
                 <img id="cropper-image" src="" style="position:absolute;user-select:none;-webkit-user-drag:none;pointer-events:none;">
             </div>
@@ -2410,9 +2418,9 @@
                 <input type="range" id="cropper-zoom" min="1" max="4" step="0.02" value="1" style="flex:1;">
                 <span style="font-size:12px;color:var(--text-secondary);">+</span>
             </div>
-            <div style="display:flex;gap:10px;">
-                <button class="btn btn-primary" style="flex:1;" onclick="cropAndSaveAvatar()">Save Photo</button>
-                <button class="btn btn-secondary" style="flex:1;" onclick="closeCropperModal()">Cancel</button>
+            <div class="modal-buttons modal-buttons--fill">
+                <button class="btn btn-primary" onclick="cropAndSaveAvatar()">Save Photo</button>
+                <button class="btn btn-secondary" onclick="closeCropperModal()">Cancel</button>
             </div>
         </div>
     </div>
@@ -2422,14 +2430,14 @@
     <div id="import-account-prompt-modal" class="modal" style="z-index:1100;">
         <div class="modal-content" style="max-width:460px;">
             <h2 style="margin-bottom:8px;">Select an Account</h2>
-            <p style="color:var(--text-secondary);font-size:14px;margin-bottom:20px;">You haven't selected a broker account for this import. Choose one now, or continue without an account.</p>
+            <p class="modal-desc">You haven't selected a broker account for this import. Choose one now, or continue without an account.</p>
             <div class="form-group">
                 <label>Broker Account</label>
                 <select id="import-prompt-account-select" style="width:100%;"></select>
             </div>
-            <div style="display:flex;gap:10px;margin-top:20px;">
-                <button class="btn btn-primary" style="flex:1;" onclick="importWithSelectedAccount()">Import with Account</button>
-                <button class="btn btn-secondary" style="flex:1;" onclick="importWithoutAccount()">Continue as Unknown</button>
+            <div class="modal-buttons modal-buttons--fill">
+                <button class="btn btn-primary" onclick="importWithSelectedAccount()">Import with Account</button>
+                <button class="btn btn-secondary" onclick="importWithoutAccount()">Continue as Unknown</button>
             </div>
         </div>
     </div>
@@ -2438,14 +2446,14 @@
     <div id="broker-delete-modal" class="modal" style="z-index:1100;">
         <div class="modal-content" style="max-width:480px;">
             <h2 style="margin-bottom:8px;">Delete Broker Account</h2>
-            <p id="broker-delete-msg" style="color:var(--text-secondary);font-size:14px;margin-bottom:16px;"></p>
+            <p id="broker-delete-msg" class="modal-desc"></p>
             <div class="form-group" id="broker-delete-reassign-group">
                 <label>Reassign trades to</label>
                 <select id="broker-delete-reassign-select" style="width:100%;"></select>
             </div>
-            <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px;">
+            <div class="modal-buttons modal-buttons--stack">
                 <button class="btn btn-primary" id="broker-delete-reassign-btn" onclick="confirmBrokerDeleteReassign()">Reassign Trades &amp; Delete Broker</button>
-                <button class="btn btn-secondary" style="color:var(--danger);" onclick="confirmBrokerDeleteAll()">Delete Broker &amp; All Its Trades</button>
+                <button class="btn btn-danger" onclick="confirmBrokerDeleteAll()">Delete Broker &amp; All Its Trades</button>
                 <button class="btn btn-secondary" onclick="closeModal('broker-delete-modal')">Cancel</button>
             </div>
         </div>
@@ -2455,10 +2463,10 @@
     <div id="conflict-clear-modal" class="modal" style="z-index:1100;">
         <div class="modal-content" style="max-width:480px;">
             <h2 style="margin-bottom:8px;">Clear Conflict Copies</h2>
-            <p style="color:var(--text-secondary);font-size:14px;margin-bottom:16px;">Delete all conflict copies kept in this browser? Your journal and cloud data are not changed.</p>
+            <p class="modal-desc">Delete all conflict copies kept in this browser? Your journal and cloud data are not changed.</p>
             <div class="modal-buttons">
                 <button class="btn btn-secondary" onclick="closeModal('conflict-clear-modal')">Cancel</button>
-                <button class="btn btn-secondary" style="color:var(--danger);" onclick="confirmClearConflictCopies()">Clear all</button>
+                <button class="btn btn-danger" onclick="confirmClearConflictCopies()">Clear all</button>
             </div>
         </div>
     </div>
@@ -2467,7 +2475,7 @@
     <div id="broker-account-modal" class="modal">
         <div class="modal-content" style="max-width:520px;max-height:90vh;display:flex;flex-direction:column;">
             <h2 id="broker-account-modal-title">Add Broker Account</h2>
-            <form id="broker-account-form" style="margin-top:20px;overflow-y:auto;flex:1;min-height:0;padding-right:4px;">
+            <form id="broker-account-form" class="modal-scroll">
                 <div class="form-group">
                     <label>Broker Platform</label>
                     <select id="ba-broker" onchange="handleBrokerSelect(this)">
@@ -2490,11 +2498,11 @@
                     <input type="text" id="ba-custom-broker" placeholder="Enter broker name">
                 </div>
                 <div class="form-group">
-                    <label>Account Number <span style="color:var(--text-secondary);font-weight:400;">(optional)</span></label>
+                    <label>Account Number <span class="label-note">(optional)</span></label>
                     <input type="text" id="ba-account-number" placeholder="e.g. 1234567">
                 </div>
                 <div class="form-group">
-                    <label>Display Name <span style="color:var(--text-secondary);font-weight:400;">(auto-generated if blank)</span></label>
+                    <label>Display Name <span class="label-note">(auto-generated if blank)</span></label>
                     <input type="text" id="ba-display-name" placeholder="e.g. Webull Day Trading">
                 </div>
                 <div class="form-group">
@@ -2505,29 +2513,29 @@
                 </div>
                 <div class="form-group">
                     <label>Color</label>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;" id="ba-color-picker">
-                        <button type="button" class="color-btn selected" data-color="#3b82f6" style="background:#3b82f6;width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;" onclick="selectBrokerColor(this)"></button>
-                        <button type="button" class="color-btn" data-color="#8b5cf6" style="background:#8b5cf6;width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;" onclick="selectBrokerColor(this)"></button>
-                        <button type="button" class="color-btn" data-color="#f97316" style="background:#f97316;width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;" onclick="selectBrokerColor(this)"></button>
-                        <button type="button" class="color-btn" data-color="#22c55e" style="background:#22c55e;width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;" onclick="selectBrokerColor(this)"></button>
-                        <button type="button" class="color-btn" data-color="#ef4444" style="background:#ef4444;width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;" onclick="selectBrokerColor(this)"></button>
-                        <button type="button" class="color-btn" data-color="#eab308" style="background:#eab308;width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;" onclick="selectBrokerColor(this)"></button>
-                        <button type="button" class="color-btn" data-color="#06b6d4" style="background:#06b6d4;width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;" onclick="selectBrokerColor(this)"></button>
-                        <button type="button" class="color-btn" data-color="#ec4899" style="background:#ec4899;width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;" onclick="selectBrokerColor(this)"></button>
+                    <div class="color-row" id="ba-color-picker">
+                        <button type="button" class="color-btn selected" data-color="#3b82f6" style="background:#3b82f6;border:2px solid transparent;" onclick="selectBrokerColor(this)"></button>
+                        <button type="button" class="color-btn" data-color="#8b5cf6" style="background:#8b5cf6;border:2px solid transparent;" onclick="selectBrokerColor(this)"></button>
+                        <button type="button" class="color-btn" data-color="#f97316" style="background:#f97316;border:2px solid transparent;" onclick="selectBrokerColor(this)"></button>
+                        <button type="button" class="color-btn" data-color="#22c55e" style="background:#22c55e;border:2px solid transparent;" onclick="selectBrokerColor(this)"></button>
+                        <button type="button" class="color-btn" data-color="#ef4444" style="background:#ef4444;border:2px solid transparent;" onclick="selectBrokerColor(this)"></button>
+                        <button type="button" class="color-btn" data-color="#eab308" style="background:#eab308;border:2px solid transparent;" onclick="selectBrokerColor(this)"></button>
+                        <button type="button" class="color-btn" data-color="#06b6d4" style="background:#06b6d4;border:2px solid transparent;" onclick="selectBrokerColor(this)"></button>
+                        <button type="button" class="color-btn" data-color="#ec4899" style="background:#ec4899;border:2px solid transparent;" onclick="selectBrokerColor(this)"></button>
                     </div>
                 </div>
                 <div class="form-group" style="margin-bottom:8px;">
-                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <label class="check-label">
                         <input type="checkbox" id="ba-is-default"> Set as default account for new trades
                     </label>
                 </div>
                 <div class="form-group" style="margin-bottom:0;">
-                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <label class="check-label">
                         <input type="checkbox" id="ba-visible" checked> Visible in dashboard, analytics, and trade views
                     </label>
                 </div>
                 <input type="hidden" id="ba-edit-id" value="">
-                <div class="modal-buttons" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);position:sticky;bottom:0;background:var(--bg-card);">
+                <div class="modal-buttons modal-footer modal-footer--sticky">
                     <button type="submit" class="btn btn-primary">Save Account</button>
                     <button type="button" class="btn btn-secondary" onclick="closeModal('broker-account-modal')">Cancel</button>
                 </div>
@@ -2542,13 +2550,13 @@
             <input type="hidden" id="bac-cash-account-id">
 
             <!-- Summary — always visible above the tabs -->
-            <div id="bac-cash-summary" style="padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;margin-bottom:14px;font-size:13px;"></div>
+            <div id="bac-cash-summary"></div>
 
             <!-- Tab bar -->
-            <div id="bac-tab-bar" style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);">
-                <button type="button" class="bac-tab-btn" data-bac-tab="opening"     onclick="switchBacTab('opening')"     style="padding:6px 14px;font-size:13px;font-weight:600;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text-secondary);cursor:pointer;margin-bottom:-2px;">Opening Balance</button>
-                <button type="button" class="bac-tab-btn" data-bac-tab="adjustments" onclick="switchBacTab('adjustments')" style="padding:6px 14px;font-size:13px;font-weight:600;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text-secondary);cursor:pointer;margin-bottom:-2px;">Cash Adjustments</button>
-                <button type="button" class="bac-tab-btn" data-bac-tab="fees"        onclick="switchBacTab('fees')"        style="padding:6px 14px;font-size:13px;font-weight:600;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text-secondary);cursor:pointer;margin-bottom:-2px;">Recurring Fees</button>
+            <div id="bac-tab-bar">
+                <button type="button" class="bac-tab-btn" data-bac-tab="opening"     onclick="switchBacTab('opening')">Opening Balance</button>
+                <button type="button" class="bac-tab-btn" data-bac-tab="adjustments" onclick="switchBacTab('adjustments')">Cash Adjustments</button>
+                <button type="button" class="bac-tab-btn" data-bac-tab="fees"        onclick="switchBacTab('fees')">Recurring Fees</button>
             </div>
 
             <!-- ── Tab pane: Opening Balance ──────────────────────── -->
@@ -2589,7 +2597,7 @@
                     </div>
                 </div>
                 <div class="form-group" style="margin-bottom:10px;">
-                    <label>Note <span style="color:var(--text-secondary);font-weight:400;">(optional)</span></label>
+                    <label>Note <span class="label-note">(optional)</span></label>
                     <input type="text" id="bac-adj-note" placeholder="e.g. Q2 deposit">
                 </div>
                 <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
@@ -2629,7 +2637,7 @@
                             <input type="date" id="bac-fee-start">
                         </div>
                         <div class="form-group" style="margin-bottom:0;">
-                            <label>End Date <span style="color:var(--text-secondary);font-weight:400;">(optional)</span></label>
+                            <label>End Date <span class="label-note">(optional)</span></label>
                             <input type="date" id="bac-fee-end">
                         </div>
                         <label style="display:flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap;padding-bottom:8px;cursor:pointer;">
@@ -2638,7 +2646,7 @@
                         </label>
                     </div>
                     <div class="form-group" style="margin-bottom:8px;">
-                        <label>Note <span style="color:var(--text-secondary);font-weight:400;">(optional)</span></label>
+                        <label>Note <span class="label-note">(optional)</span></label>
                         <input type="text" id="bac-fee-note" placeholder="e.g. Market data subscription">
                     </div>
                     <div style="display:flex;gap:8px;justify-content:flex-end;">
@@ -2652,7 +2660,7 @@
                 </div>
             </div>
 
-            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px;">
+            <div class="modal-buttons modal-buttons--end">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('broker-account-cash-modal')">Close</button>
             </div>
         </div>
@@ -2661,15 +2669,15 @@
     <!-- Stock Chart Modal -->
     <div id="stock-chart-modal" class="modal">
         <div class="modal-content" style="max-width: 1400px; max-height: 95vh; width: 95%; display: flex; flex-direction: column;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
+            <div class="modal-head">
                 <div>
-                    <h2 id="chart-ticker-title" style="margin: 0;">Chart</h2>
-                    <p id="chart-trade-info" style="margin: 4px 0 0; font-size: 13px; color: var(--text-secondary);"></p>
+                    <h2 id="chart-ticker-title">Chart</h2>
+                    <p id="chart-trade-info" class="modal-subtitle"></p>
                 </div>
-                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
-                    <div style="display:flex; gap:8px; align-items:center;">
-                        <label for="chart-timeframe" style="font-size:13px; color:var(--text-secondary);">Timeframe</label>
-                        <select id="chart-timeframe" class="form-control" style="width:auto; min-width:110px;" onchange="reloadCurrentChart()">
+                <div class="modal-head-actions">
+                    <div class="chart-tf-group">
+                        <label for="chart-timeframe">Timeframe</label>
+                        <select id="chart-timeframe" class="form-control" onchange="reloadCurrentChart()">
                             <option value="3m">3 Min</option>
                             <option value="5m" selected>5 Min</option>
                             <option value="10m">10 Min</option>
@@ -2685,9 +2693,9 @@
                 </div>
                 <div id="tradingview-chart" style="width: 100%; height: 100%; min-height:500px;"></div>
             </div>
-            <div style="margin-top: 12px; padding: 12px; background: var(--bg-tertiary); border-radius: 6px; font-size: 12px; color: var(--text-secondary);">
+            <div class="modal-info-note">
                 💡 Charts use your Twelve Data API key from <strong>Settings → Integrations</strong>. 3-minute and 10-minute candles are built locally from 1-minute data. Each fill is marked on the candle that contains it; more than 3 exits on one candle share one label.
-                <div style="margin-top: 6px;">Charts by <a class="plan-ctx-open-link" href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer">TradingView</a></div>
+                <div id="chart-tradingview-credit" class="chart-credit">Charts by <a class="plan-ctx-open-link" href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer">TradingView</a></div>
             </div>
         </div>
     </div>
@@ -2695,20 +2703,20 @@
     <!-- ═══ PROMPT EDITOR MODAL ═══ -->
     <div id="prompt-editor-modal" class="modal">
         <div class="modal-content" style="max-width:700px;max-height:90vh;display:flex;flex-direction:column;">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
-                <h2 id="prompt-editor-title" style="margin:0;">New Prompt</h2>
+            <div class="modal-head">
+                <h2 id="prompt-editor-title">New Prompt</h2>
                 <button type="button" class="btn btn-secondary btn-small" onclick="AILibrary.closeEditor()">Close</button>
             </div>
-            <div style="overflow-y:auto;flex:1;padding-right:4px;">
+            <div class="modal-scroll">
                 <div class="form-group">
                     <label>Title</label>
                     <input type="text" id="pe-title" placeholder="e.g. Identify my worst trading habits">
                 </div>
                 <div class="form-group">
-                    <label>Description <span style="font-weight:400;color:var(--text-secondary);text-transform:none;letter-spacing:0;">(optional)</span></label>
+                    <label>Description <span class="label-note">(optional)</span></label>
                     <input type="text" id="pe-description" placeholder="Short summary of what this prompt does">
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="field-row-2">
                     <div class="form-group">
                         <label>Category Filter</label>
                         <select id="pe-category">
@@ -2732,15 +2740,15 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                        <label style="margin:0;">Prompt Text</label>
+                    <div class="label-row">
+                        <label>Prompt Text</label>
                         <button type="button" id="pe-info-btn" class="pe-info-btn" onclick="peTipToggle(event)" title="Prompt writing tips">?</button>
                     </div>
-                    <textarea id="pe-prompttext" placeholder="Write your prompt here. You can reference win rate, trade patterns, behavior tags, and more." style="min-height:160px;"></textarea>
+                    <textarea id="pe-prompttext" placeholder="Write your prompt here. You can reference win rate, trade patterns, behavior tags, and more."></textarea>
                 </div>
                 <div id="pe-msg" style="display:none;font-size:13px;margin-bottom:12px;"></div>
             </div>
-            <div class="modal-buttons" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+            <div class="modal-buttons modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="AILibrary.closeEditor()">Cancel</button>
                 <button type="button" class="btn btn-primary" onclick="AILibrary.saveFromEditor()">Save Prompt</button>
             </div>
@@ -2773,7 +2781,7 @@ Analyze this trader's data and identify their top 3 behavioral patterns negative
     <script src="js/config/config.js"></script>
     <script src="js/dek-crypto.js"></script>
     <script src="js/supabase-auth.js" defer></script>
-    <script src="js/shared/prompt-modal.js?v=1" defer></script>
+    <script src="js/shared/prompt-modal.js?v=2" defer></script>
     <script src="js/shared/filter-bar.js?v=7" defer></script>
     <script src="Denarii.js?v=81" defer></script>
     <script src="js/services/webull-sync.js?v=6" defer></script>
@@ -2785,7 +2793,7 @@ Analyze this trader's data and identify their top 3 behavioral patterns negative
     <script src="js/demoSeed.js?v=2" defer></script>
     <script src="js/theme.js?v=3" defer></script>
     <script src="js/app.js" defer></script>
-    <script src="js/update-banner.js?v=1" defer></script>
+    <script src="js/update-banner.js?v=2" defer></script>
 
     <!-- Markdown + sanitization for AI output rendering -->
     <script src="vendor/marked/12.0.2/marked.min.js"></script>
@@ -2822,10 +2830,10 @@ Analyze this trader's data and identify their top 3 behavioral patterns negative
     <script src="js/pages/discipline.js?v=8" defer></script>
     <script src="js/pages/analytics-helpers.js?v=2" defer></script>
     <script src="js/pages/stock-chart.js?v=4" defer></script>
-    <script src="js/pages/settings.js?v=11" defer></script>
+    <script src="js/pages/settings.js?v=12" defer></script>
     <script src="js/shared/editor-toolbar.js?v=1" defer></script>
     <script src="js/pages/journal.js?v=27" defer></script>
-    <script src="js/pages/broker-accounts.js?v=19" defer></script>
+    <script src="js/pages/broker-accounts.js?v=20" defer></script>
     <script src="js/pages/reviews.js?v=9" defer></script>
     <script src="js/pages/daily-planner.js?v=6" defer></script>
     <script src="js/pages/weekly-planner.js?v=7" defer></script>
@@ -2839,7 +2847,7 @@ Analyze this trader's data and identify their top 3 behavioral patterns negative
     <div id="note-template-modal" class="modal">
         <div class="modal-content tm-modal-content">
             <div class="tm-header">
-                <h2 style="margin:0;font-size:16px;">Template Manager</h2>
+                <h2 class="tm-title">Template Manager</h2>
                 <button type="button" class="btn btn-secondary btn-small" onclick="closeModal('note-template-modal')">Close</button>
             </div>
             <div class="tm-body">
@@ -2887,11 +2895,11 @@ Analyze this trader's data and identify their top 3 behavioral patterns negative
                                 onkeydown="tmEdHandleKeydown(event)"
                                 oninput="tmEdOnInput()"></div>
                         </div>
-                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <div class="tm-actions">
                             <button type="button" class="btn btn-primary btn-small" onclick="tmApplyTemplate()">Apply to Notes</button>
                             <button type="button" id="tm-save-btn" class="btn btn-secondary btn-small" onclick="tmSaveTemplate()">Save Changes</button>
                             <button type="button" id="tm-duplicate-btn" class="btn btn-secondary btn-small" onclick="tmDuplicateTemplate()" title="Copy this template to Mine">Duplicate</button>
-                            <button type="button" id="tm-delete-btn" class="btn btn-small" onclick="tmDeleteTemplate()" style="background:var(--danger);color:#fff;">Delete</button>
+                            <button type="button" id="tm-delete-btn" class="btn btn-small btn-danger" onclick="tmDeleteTemplate()">Delete</button>
                         </div>
                     </div>
                 </div>

@@ -847,7 +847,7 @@
                         <span style="color:var(--text-secondary);">Updated ${formatRelativeDate(wbCardLastSync.get(String(acct.id)) || lastDate)}</span>
                     </div>
                     ${balanceLine}
-                    ${wbCardNeedsApproval.has(String(acct.id)) ? '<div class="ba-meta" style="font-size:12px;' + WB_WARN_STYLE + '">Webull needs re-approval</div>' : ''}
+                    ${wbCardNeedsApproval.has(String(acct.id)) ? '<div class="ba-meta wb-warn">Webull needs re-approval</div>' : ''}
                     ${_wbCardReviewHtml(acct.id)}
                 </div>
                 <div class="ba-actions" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
@@ -1004,8 +1004,6 @@
     const WB_HISTORY_START = '2018-05-21';
     // The expiry line turns amber this long before the approval expires.
     const WB_EXPIRY_WARN_MS = 3 * 24 * 60 * 60 * 1000;
-    // Amber text that stays readable on light themes.
-    const WB_WARN_STYLE = 'color:color-mix(in srgb, var(--warning) 50%, var(--text-primary));';
 
     // Main is running a sync (from 'run' status events). Outlives modal
     // reopen (wbUi resets per open).
@@ -1199,7 +1197,7 @@
             if (!form || !anchor) return null;
             el = document.createElement('div');
             el.id = 'ba-webull-section';
-            el.style.cssText = 'margin-top:16px;padding-top:16px;border-top:1px solid var(--border);';
+            el.className = 'wb-link-section';
             // Needs review buttons (re-rendered often), handled in one place.
             el.addEventListener('click', e => {
                 const b = e.target && e.target.closest ? e.target.closest('[data-wb-review]') : null;
@@ -1267,19 +1265,18 @@
         el.style.display = show ? '' : 'none';
         if (!show) { el.innerHTML = ''; return; }
 
-        const muted = 'color:var(--text-secondary);font-size:13px;';
-        let html = '<h3 style="font-size:15px;margin-bottom:8px;">Webull link</h3>';
+        let html = '<h3 class="wb-link-title">Webull link</h3>';
 
         if (!wbUi.journalId) {
-            el.innerHTML = html + '<p style="' + muted + '">Save this account first, then choose Edit to link Webull.</p>';
+            el.innerHTML = html + '<p class="settings-note">Save this account first, then choose Edit to link Webull.</p>';
             return;
         }
         if (!wbUi.rowLoaded) {
-            el.innerHTML = html + '<p style="' + muted + '">Loading Webull link…</p>';
+            el.innerHTML = html + '<p class="settings-note">Loading Webull link…</p>';
             return;
         }
         if (wbUi.loadError) {
-            el.innerHTML = html + '<div class="alert alert-danger" style="margin-bottom:0;">' + escapeHtml(wbUi.loadError) + '</div>';
+            el.innerHTML = html + '<div class="alert alert-danger wb-alert--flush">' + escapeHtml(wbUi.loadError) + '</div>';
             return;
         }
 
@@ -1294,9 +1291,9 @@
 
         // Notices
         if (!connected) {
-            html += '<div class="alert alert-info" style="margin-bottom:12px;">' + escapeHtml(WB_CONNECT_MSG) + '</div>';
+            html += '<div class="alert alert-info wb-alert">' + escapeHtml(WB_CONNECT_MSG) + '</div>';
         } else if (needsApproval || (r && r.status === 'needs_approval')) {
-            html += '<div class="alert alert-warning" style="margin-bottom:12px;">' + escapeHtml(WB_APPROVE_MSG) + '</div>';
+            html += '<div class="alert alert-warning wb-alert">' + escapeHtml(WB_APPROVE_MSG) + '</div>';
         }
 
         // Account options: labels only. A saved account that isn't in the
@@ -1328,15 +1325,15 @@
             '<div class="form-group">' +
                 '<label for="ba-wb-start">Import trades starting from</label>' +
                 '<input type="date" id="ba-wb-start" min="' + WB_HISTORY_START + '" max="' + _wbTodayUtc() + '" value="' + escapeHtml(d.startDate) + '"' + editDis + '>' +
-                '<div style="' + muted + 'margin-top:4px;">Leave empty to import all history.</div>' +
-                '<div id="ba-wb-overlap" style="' + WB_WARN_STYLE + 'font-size:13px;margin-top:4px;display:none;"></div>' +
+                '<div class="field-hint">Leave empty to import all history.</div>' +
+                '<div id="ba-wb-overlap" class="field-hint wb-warn" style="display:none;"></div>' +
             '</div>';
 
         if (r) {
             // While approval is needed the notice above is the only message.
             const showErr = r.error && WB_ERROR_STATUSES.indexOf(r.status) !== -1
                 && !needsApproval && r.status !== 'needs_approval';
-            html += '<div style="' + muted + 'margin-bottom:12px;line-height:1.6;">' +
+            html += '<div class="wb-status">' +
                 '<div>Last synced: ' + escapeHtml(_wbFmtLocal(r.lastSyncedAt)) + '</div>' +
                 '<div>Status: <span id="ba-wb-status">' + escapeHtml(_wbStatusText(r)) + '</span></div>' +
                 '<div id="ba-wb-progress"' + (r.progress ? '' : ' style="display:none;"') + '>' + escapeHtml(_wbProgressText(r.progress)) + '</div>' +
@@ -1344,18 +1341,18 @@
                 (showErr ? '<div style="color:var(--danger);">' + escapeHtml(String(r.error)) + '</div>' : '') +
                 _wbLastResultHtml(wbUi.journalId) +
             '</div>';
-            html += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">' +
+            html += '<div class="settings-actions wb-actions">' +
                     '<button type="button" id="ba-wb-sync" class="btn btn-small btn-secondary">Sync now</button>' +
                 '</div>';
         }
         html += _wbReviewHtml(wbUi.journalId);
 
         if (wbUi.msg) {
-            html += '<div class="alert alert-' + wbUi.msgType + '" style="margin-bottom:12px;">' + escapeHtml(wbUi.msg) + '</div>';
+            html += '<div class="alert alert-' + wbUi.msgType + ' wb-alert">' + escapeHtml(wbUi.msg) + '</div>';
         }
 
-        html += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
-                '<span id="ba-wb-dirty" style="' + muted + '">Unsaved Webull link changes</span>' +
+        html += '<div class="settings-actions">' +
+                '<span id="ba-wb-dirty" class="settings-note">Unsaved Webull link changes</span>' +
             '</div>';
 
         el.innerHTML = html;
@@ -1387,7 +1384,7 @@
     function _wbCardReviewHtml(journalId) {
         const r = _wbReview(journalId);
         if (!r || !r.count) return '';
-        return '<div class="ba-meta" style="font-size:12px;' + WB_WARN_STYLE + '">Webull: ' + r.count + ' need review (Edit to resolve)</div>';
+        return '<div class="ba-meta wb-warn">Webull: ' + r.count + ' need review (Edit to resolve)</div>';
     }
 
     function _wbReasonLabel(reason) {
@@ -1422,7 +1419,7 @@
     function _wbLastResultHtml(journalId) {
         const res = (typeof WebullSync !== 'undefined' && typeof WebullSync.lastResult === 'function') ? WebullSync.lastResult(journalId) : null;
         if (!res) return '';
-        if (!res.ok) return '<div style="color:var(--danger);">Last sync not saved: ' + escapeHtml(String(res.error || 'unknown error')) + '</div>';
+        if (!res.ok) return '<div class="wb-error">Last sync not saved: ' + escapeHtml(String(res.error || 'unknown error')) + '</div>';
         return '<div>Last sync: ' + res.created + ' imported, ' + res.updated + ' updated, ' +
             res.review + ' held for review, ' + res.skipped + ' skipped</div>';
     }
@@ -1431,29 +1428,27 @@
         const rv = _wbReview(journalId);
         if (!rv || !rv.count) return '';
         const dis = wbUi.reviewBusy ? ' disabled' : '';
-        const muted = 'color:var(--text-secondary);font-size:13px;';
-        const box = 'border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:13px;';
         const btn = (action, arg, label, extra) => '<button type="button" class="btn btn-small btn-secondary" data-wb-review="' + action +
             '" data-wb-arg="' + escapeHtml(String(arg)) + '"' + (extra || dis) + '>' + label + '</button>';
-        const reason = text => ' · <span style="' + WB_WARN_STYLE + '">' + escapeHtml(text) + '</span>';
-        const fillRows = entries => entries.map(e => '<div style="' + muted + 'margin-left:12px;">Held: ' + escapeHtml(_wbFillLine(e.fill)) + '</div>').join('');
+        const reason = text => ' · <span class="wb-warn">' + escapeHtml(text) + '</span>';
+        const fillRows = entries => entries.map(e => '<div class="wb-review-held">Held: ' + escapeHtml(_wbFillLine(e.fill)) + '</div>').join('');
 
-        let html = '<div id="ba-wb-review" style="margin-bottom:12px;">' +
-            '<div style="font-weight:600;font-size:14px;margin-bottom:6px;' + WB_WARN_STYLE + '">Needs review (' + rv.count + ')</div>';
+        let html = '<div id="ba-wb-review" class="wb-review">' +
+            '<div class="wb-review-title">Needs review (' + rv.count + ')</div>';
         rv.edited.forEach(item => {
             const webullDis = item.canUseWebull ? dis : ' disabled title="' + escapeHtml(WB_NO_BASE_TITLE) + '"';
-            html += '<div style="' + box + '">' +
+            html += '<div class="wb-review-item">' +
                 '<div>' + escapeHtml(_wbTradeLine(item.trade)) + reason('Edited after import') + '</div>' +
                 fillRows(item.entries) +
-                '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">' +
+                '<div class="wb-review-actions">' +
                     btn('keep', item.trade.id, 'Keep my edits') +
                     btn('webull', item.trade.id, 'Use Webull\'s data', webullDis) +
                 '</div></div>';
         });
         rv.held.forEach(g => {
-            html += '<div style="' + box + '">' +
+            html += '<div class="wb-review-item">' +
                 g.entries.map(e => '<div>' + escapeHtml(_wbFillLine(e.fill)) + reason(_wbReasonLabel(e.reason)) + '</div>').join('') +
-                '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">' +
+                '<div class="wb-review-actions">' +
                     btn('import', g.id, 'Import') +
                     btn('ignore', g.id, 'Ignore') +
                 '</div></div>';
@@ -1506,7 +1501,7 @@
         if (!isFinite(ms)) return '';
         const soon = ms - nowMs < WB_EXPIRY_WARN_MS;
         const text = 'Webull approval expires ' + new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-        return '<div' + (soon ? ' style="' + WB_WARN_STYLE + '"' : '') + '>' + escapeHtml(text) + '</div>';
+        return '<div' + (soon ? ' class="wb-warn"' : '') + '>' + escapeHtml(text) + '</div>';
     }
 
     // Sync now needs a saved, unchanged link, a connected and approved

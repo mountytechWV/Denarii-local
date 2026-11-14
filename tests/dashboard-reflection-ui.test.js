@@ -22,6 +22,7 @@ const APP  = fs.readFileSync(path.join(ROOT, 'Denarii.js'), 'utf8');
 const JNL  = fs.readFileSync(path.join(ROOT, 'js', 'pages', 'journal.js'), 'utf8');
 const AUTH = fs.readFileSync(path.join(ROOT, 'js', 'auth.js'), 'utf8');
 const HTML = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const CSS  = fs.readFileSync(path.join(ROOT, 'css', 'denarii-ds.css'), 'utf8');
 
 function extractFunction(src, name) {
     const start = src.indexOf('function ' + name + '(');
@@ -298,11 +299,17 @@ test('reflection: hint is written to the message under Save, no alert', async ()
 });
 
 test('index.html: hint element sits right under the Save Reflection button', () => {
-    assert.match(HTML, /Save Reflection<\/button>\s*<div id="jnl-open-hint" style="display:none;[^"]*color:var\(--danger/);
+    assert.match(HTML, /Save Reflection<\/button>\s*<div id="jnl-open-hint" class="jnl-open-hint" style="display:none;">/);
+    assert.match(CSS, /\.jnl-open-hint \{[^}]*color: var\(--danger\);/);
 });
 
 test('index.html: header subtitle is bold and uses existing tokens', () => {
-    assert.match(HTML, /<p style="color:var\(--text-primary\);font-size:15px;font-weight:600;[^"]*" id="journal-editor-subtitle">/);
+    assert.match(HTML, /<p class="jnl-editor-subtitle" id="journal-editor-subtitle">/);
+    const rule = /\.jnl-editor-subtitle \{([^}]*)\}/.exec(CSS);
+    assert.ok(rule, '.jnl-editor-subtitle rule exists');
+    assert.match(rule[1], /font-size: 15px;/);
+    assert.match(rule[1], /font-weight: 600;/);
+    assert.match(rule[1], /color: var\(--text-primary\);/);
 });
 
 // ── 7. Account column ───────────────────────────────────────────────────────
