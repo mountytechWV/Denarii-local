@@ -10025,6 +10025,176 @@
             return (v < 0 ? '-$' : '$') + Math.abs(v).toFixed(2);
         }
 
+        // ── KPI card graphics (Stage 8b) ──
+        // Read-only: drawn from values updateDashboard already computed.
+        // Colours come from the kpi-* classes in denarii-ds.css.
+        function _kpiClamp01(x) {
+            x = Number(x);
+            if (x === Infinity) return 1;
+            if (!isFinite(x) || x <= 0) return 0;
+            return x > 1 ? 1 : x;
+        }
+
+        function _kpiPct(f) {
+            return (f * 100).toFixed(2);
+        }
+
+        // Total Trades: ten blocks split wins / losses / rest (open + breakeven).
+        // Wins and losses are rounded; the rest takes the remainder, so the
+        // three always add up to 10 and none is negative.
+        function _kpiSegCounts(wins, losses, total) {
+            total = Number(total) || 0;
+            if (total <= 0) return { win: 0, loss: 0, rest: 10 };
+            var w = Math.min(10, Math.round(_kpiClamp01(wins / total) * 10));
+            var l = Math.min(10 - w, Math.round(_kpiClamp01(losses / total) * 10));
+            return { win: w, loss: l, rest: 10 - w - l };
+        }
+
+        function _kpiSegMeter(c) {
+            var html = '';
+            for (var i = 0; i < 10; i++) {
+                html += '<span class="kpi-seg ' + (i < c.win ? 'kpi-win' : i < c.win + c.loss ? 'kpi-loss' : 'kpi-rest') + '"></span>';
+            }
+            return '<div class="kpi-viz kpi-meter" aria-hidden="true">' + html + '</div>';
+        }
+
+        // Win Rate donut. r = 15.9155 gives a circumference of 100, so each
+        // dash is a percentage. With no closed trades only the track is drawn.
+        function _kpiDonut(pct, hasData) {
+            var p = _kpiClamp01(parseFloat(pct) / 100) * 100;
+            var c = ' cx="18" cy="18" r="15.9155"';
+            var ring = '';
+            if (!hasData) {
+                ring = '<circle class="kpi-donut-track"' + c + '/>';
+            } else {
+                if (p < 100) ring += '<circle class="kpi-donut-rest"' + c + ' stroke-dasharray="' + (100 - p).toFixed(2) + ' 100" stroke-dashoffset="' + (-p).toFixed(2) + '"/>';
+                if (p > 0) ring += '<circle class="kpi-donut-win"' + c + ' stroke-dasharray="' + p.toFixed(2) + ' 100"/>';
+            }
+            return '<svg class="kpi-donut" viewBox="0 0 36 36" aria-hidden="true">'
+                + '<g transform="rotate(-90 18 18)">' + ring + '</g>'
+                + '<text class="kpi-donut-text" x="18" y="18">' + Math.round(p) + '%</text>'
+                + '</svg>';
+        }
+
+        // Profit Factor gauge: 0..3 maps to 0..180 degrees from the left;
+        // Infinity points to 3. null / NaN → null (no needle).
+        function _kpiGaugeAngle(pf) {
+            if (pf == null) return null;
+            pf = Number(pf);
+            if (isNaN(pf)) return null;
+            return _kpiClamp01(pf / 3) * 180;
+        }
+
+        function _kpiArcPt(deg, r) {
+            var a = deg * Math.PI / 180;
+            return (50 - r * Math.cos(a)).toFixed(2) + ',' + (50 - r * Math.sin(a)).toFixed(2);
+        }
+
+        function _kpiGauge(pf) {
+            var R = 42, a = _kpiGaugeAngle(pf);
+            var zone = function (cls, a0, a1) {
+                return '<path class="kpi-zone ' + cls + '" d="M' + _kpiArcPt(a0, R) + 'A' + R + ',' + R + ' 0 0 1 ' + _kpiArcPt(a1, R) + '"/>';
+            };
+            var needle = '';
+            if (a != null) {
+                var tip = _kpiArcPt(a, R - 8).split(',');
+                needle = '<line class="kpi-gauge-needle" x1="50" y1="50" x2="' + tip[0] + '" y2="' + tip[1] + '"/>'
+                    + '<circle class="kpi-gauge-pivot" cx="50" cy="50" r="3.5"/>';
+            }
+            return '<div class="kpi-gauge" aria-hidden="true"><svg viewBox="0 0 100 56">'
+                + zone('kpi-zone-loss', 0, 60) + zone('kpi-zone-mid', 60, 120) + zone('kpi-zone-win', 120, 180)
+                + needle + '</svg></div>';
+        }
+
+        // Avg Win / Avg Loss balance bar: green left of centre, red right;
+        // the larger side fills its half. side ('win' | 'loss') dims the other.
+        function _kpiBalance(avgWin, avgLoss, side) {
+            var w = Math.abs(Number(avgWin)), l = Math.abs(Number(avgLoss));
+            if (!isFinite(w)) w = 0;
+            if (!isFinite(l)) l = 0;
+            var max = Math.max(w, l), html = '';
+            if (w > 0) html += '<span class="kpi-bal-win' + (side === 'loss' ? ' kpi-dim' : '') + '" style="width:' + _kpiPct(w / max / 2) + '%;"></span>';
+            if (l > 0) html += '<span class="kpi-bal-loss' + (side === 'win' ? ' kpi-dim' : '') + '" style="width:' + _kpiPct(l / max / 2) + '%;"></span>';
+            var ratio = w > 0 && l > 0 && isFinite(w / l) ? '<div class="kpi-ratio">' + (w / l).toFixed(2) + 'R payoff</div>' : '';
+            return '<div class="kpi-viz kpi-balance"><div class="kpi-bal-track" aria-hidden="true">' + html
+                + '<span class="kpi-bal-mid"></span></div>' + ratio + '</div>';
+        }
+
+        // Cumulative P&L in exit-time order, starting at 0. Above
+        // 2 × maxBuckets points, each bucket keeps its min and max (in order)
+        // so drawdowns survive, and the final total is always the last point.
+        function _kpiSparkPoints(closed, maxBuckets) {
+            var n = closed ? closed.length : 0;
+            if (!n) return [];
+            var rows = new Array(n), i;
+            for (i = 0; i < n; i++) {
+                var ts = Date.parse(closed[i].exitTime || closed[i].entryTime);
+                rows[i] = { ts: isFinite(ts) ? ts : 0, pnl: Number(closed[i].pnl) || 0, i: i };
+            }
+            rows.sort(function (a, b) { return a.ts - b.ts || a.i - b.i; });
+            var cum = [0], run = 0;
+            for (i = 0; i < n; i++) { run += rows[i].pnl; cum.push(run); }
+            if (cum.length <= maxBuckets * 2) return cum;
+            var out = [0], per = (cum.length - 1) / maxBuckets;
+            for (var b = 0; b < maxBuckets; b++) {
+                var s = 1 + Math.floor(b * per), e = Math.min(cum.length, 1 + Math.floor((b + 1) * per));
+                if (s >= e) continue;
+                var lo = s, hi = s;
+                for (var j = s; j < e; j++) {
+                    if (cum[j] < cum[lo]) lo = j;
+                    if (cum[j] > cum[hi]) hi = j;
+                }
+                if (lo === hi) out.push(cum[lo]);
+                else if (lo < hi) out.push(cum[lo], cum[hi]);
+                else out.push(cum[hi], cum[lo]);
+            }
+            if (out[out.length - 1] !== cum[cum.length - 1]) out.push(cum[cum.length - 1]);
+            return out;
+        }
+
+        // Total P&L (cloud): gross won / lost from the card's own values —
+        // avgWin × winCount and |avgLoss| × lossCount. Non-finite or negative → 0.
+        function _kpiGross(avgWin, winCount, avgLoss, lossCount) {
+            var won = Number(avgWin) * Number(winCount);
+            var lost = Math.abs(Number(avgLoss)) * Number(lossCount);
+            return {
+                won: isFinite(won) && won > 0 ? won : 0,
+                lost: isFinite(lost) && lost > 0 ? lost : 0,
+            };
+        }
+
+        // Two labelled bars; the larger fills the width. Empty when both are 0.
+        function _kpiWonLost(g) {
+            var max = Math.max(g.won, g.lost);
+            if (!(max > 0)) return '';
+            var row = function (cls, label, v) {
+                return '<div class="kpi-wl-row ' + cls + '"><div class="kpi-wl-label">' + label + ' ' + _dashFmtMoney(v) + '</div>'
+                    + '<div class="kpi-wl-bar" aria-hidden="true">' + (v > 0 ? '<span style="width:' + _kpiPct(v / max) + '%;"></span>' : '') + '</div></div>';
+            };
+            return '<div class="kpi-viz kpi-wonlost">' + row('kpi-win', 'Won', g.won) + row('kpi-loss', 'Lost', g.lost) + '</div>';
+        }
+
+        // 100 × 40 viewBox stretched to the slot; the fill runs to the zero line.
+        function _kpiSparkline(pts, finalPnL) {
+            if (!pts || pts.length < 2) return '';
+            var lo = 0, hi = 0, i;
+            for (i = 0; i < pts.length; i++) {
+                if (pts[i] < lo) lo = pts[i];
+                if (pts[i] > hi) hi = pts[i];
+            }
+            var range = hi - lo, last = pts.length - 1;
+            var y = function (v) { return (range > 0 ? 39 - (v - lo) / range * 38 : 20).toFixed(2); };
+            var line = '';
+            for (i = 0; i < pts.length; i++) line += (i ? 'L' : 'M') + (i / last * 100).toFixed(2) + ',' + y(pts[i]);
+            var y0 = y(0);
+            return '<div class="kpi-viz kpi-spark-wrap" aria-hidden="true">'
+                + '<svg class="kpi-spark ' + (finalPnL >= 0 ? 'kpi-win' : 'kpi-loss') + '" viewBox="0 0 100 40" preserveAspectRatio="none">'
+                + (lo < 0 && hi > 0 ? '<path class="kpi-spark-zero" d="M0,' + y0 + 'L100,' + y0 + '"/>' : '')
+                + '<path class="kpi-spark-area" d="' + line + 'L100,' + y0 + 'L0,' + y0 + 'Z"/>'
+                + '<path class="kpi-spark-line" d="' + line + '"/>'
+                + '</svg></div>';
+        }
+
         function updateDashboard() {
             _syncDashPeriod();
             _dashCloseMenu();
@@ -10162,31 +10332,55 @@
                 _accountValueValueHtml = '<div class="stat-value ' + _cavClass + '">' + _cavStr + '</div>';
             }
 
+            // KPI graphics (read-only, from the values above). Cloud metrics
+            // carry no trade history, so Total P&L never draws a curve from
+            // the partial local list there.
+            const _vCloudMetrics = _isCloudDash && _cloudDash.metricsReady;
+            const _vClosed = _vCloudMetrics ? (Number(_cloudDash.metrics.closedTrades) || 0) : closedTrades.length;
+            const _vMeter = _kpiSegMeter(_kpiSegCounts(_mWinCount, _mLossCount, _mTotalTrades));
+            // Cloud: no trade history, so won / lost bars instead of the curve
+            // (both together would make this card taller than Profit Factor).
+            const _vSpark = _vCloudMetrics
+                ? _kpiWonLost(_kpiGross(_mAvgWin, _mWinCount, _mAvgLoss, _mLossCount))
+                : _kpiSparkline(_kpiSparkPoints(closedTrades, 120), _mTotalPnL);
+            const _vDonut = _kpiDonut(_mWinRate, _vClosed > 0);
+            const _vGauge = _kpiGauge(_mProfitFactor);
+            const _vAvgWinBal = _kpiBalance(_mAvgWin, _mAvgLoss, 'win');
+            const _vAvgLossBal = _kpiBalance(_mAvgWin, _mAvgLoss, 'loss');
+
             document.getElementById('dashboard-stats').innerHTML = `
                 <div class="stat-card">
                     <div class="stat-label">Total Trades</div>
                     <div class="stat-value neutral">${_mTotalTrades}</div>
+                    ${_vMeter}
                     <div class="stat-subtitle">${_mWinCount}W / ${_mLossCount}L</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Total P&L</div>
                     <div class="stat-value ${_mTotalPnL >= 0 ? 'positive' : 'negative'}">${_dashFmtMoney(_mTotalPnL)}</div>
+                    ${_vSpark}
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Win Rate</div>
-                    <div class="stat-value ${_mWinRate >= 50 ? 'positive' : 'negative'}">${_mWinRate}%</div>
+                    <div class="kpi-donut-row">
+                        <div class="stat-value ${_mWinRate >= 50 ? 'positive' : 'negative'}">${_mWinRate}%</div>
+                        ${_vDonut}
+                    </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Profit Factor</div>
                     <div class="stat-value ${_mProfitFactor >= 2 ? 'positive' : _mProfitFactor >= 1 ? 'neutral' : 'negative'}">${isFinite(_mProfitFactor) ? _mProfitFactor.toFixed(2) : '∞'}</div>
+                    ${_vGauge}
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Avg Win</div>
                     <div class="stat-value positive">${_dashFmtMoney(_mAvgWin)}</div>
+                    ${_vAvgWinBal}
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Avg Loss</div>
                     <div class="stat-value negative">${_dashFmtMoney(_mAvgLoss)}</div>
+                    ${_vAvgLossBal}
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Account Value</div>

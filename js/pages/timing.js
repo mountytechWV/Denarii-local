@@ -636,7 +636,7 @@
             var hasData = buckets.some(function(b){ return b.count > 0; });
             if (!hasData) return widgetHtml(id, 'Hold Time Analysis', emptyState('No hold time data in current view.'), sz, 'hold-time-analysis');
             var html = '';
-            html += '<table style="width:100%;border-collapse:collapse;"><thead><tr>' +
+            html += '<table class="snap-trades-table" style="width:100%;border-collapse:collapse;"><thead><tr>' +
                 '<th style="text-align:left;padding:8px 12px;">Hold Time</th>' +
                 '<th style="text-align:right;padding:8px 12px;">Trades</th>' +
                 '<th style="text-align:right;padding:8px 12px;">P&L</th>' +
@@ -661,8 +661,9 @@
 
     // ── Chart rendering ────────────────────────────────────────────────
     function renderTimingCharts(dowStats, todStats, trades, layout) {
-        var tc = '#8b9aae', gc = 'rgba(255,255,255,0.07)';
-        var GREEN = 'rgba(34,197,94,0.75)', RED = 'rgba(239,68,68,0.75)', BLUE = 'rgba(96,165,250,0.75)';
+        var cc = getChartTheme();
+        var tc = cc.text, gc = cc.grid;
+        var GREEN = cc.fade('success', 0.75), RED = cc.fade('danger', 0.75), BLUE = 'rgba(96,165,250,0.75)';
         var SERIES_COLORS = ['#60a5fa','#34d399','#f472b6','#fbbf24','#a78bfa','#f97316','#38bdf8','#4ade80'];
 
         function mkAx(extra) {
@@ -675,7 +676,7 @@
             return {
                 paper_bgcolor:'transparent', plot_bgcolor:'transparent',
                 margin: m || {t:10,r:10,b:36,l:52},
-                font:{family:'Inter,sans-serif',color:tc},
+                font:{family:cc.font,color:tc},
                 showlegend:false
             };
         }
@@ -742,7 +743,7 @@
                 b.xaxis = mkAx({type:'category'});
                 b.yaxis = mkAx(metricTickFmt());
                 var thr = metricThreshold();
-                if (thr) b.shapes = [{type:'line',x0:-0.5,x1:4.5,y0:thr,y1:thr,xref:'x',yref:'y',line:{color:'rgba(255,255,255,0.2)',width:1,dash:'dot'}}];
+                if (thr) b.shapes = [{type:'line',x0:-0.5,x1:4.5,y0:thr,y1:thr,xref:'x',yref:'y',line:{color:cc.ref,width:1,dash:'dot'}}];
                 tryPlot(el, [{x:dowLabels, y:dvals, type:'bar', marker:{color:barColors(dvals, thr)}}], b);
             }
 
@@ -753,7 +754,7 @@
                 var b = mkBase();
                 b.xaxis = mkAx({type:'category'});
                 b.yaxis = mkAx({ticksuffix:'%', range:[0,100]});
-                b.shapes = [{type:'line',x0:-0.5,x1:4.5,y0:50,y1:50,xref:'x',yref:'y',line:{color:'rgba(255,255,255,0.2)',width:1,dash:'dot'}}];
+                b.shapes = [{type:'line',x0:-0.5,x1:4.5,y0:50,y1:50,xref:'x',yref:'y',line:{color:cc.ref,width:1,dash:'dot'}}];
                 tryPlot(el, [{x:dowLabels, y:wrv, type:'bar', marker:{color:barColors(wrv, 50)}}], b);
             }
 
@@ -787,7 +788,7 @@
                 b.xaxis = mkAx({type:'category', tickangle: active.length > 6 ? -30 : 0});
                 b.yaxis = mkAx(metricTickFmt());
                 var thr2 = metricThreshold();
-                if (thr2) b.shapes = [{type:'line',x0:-0.5,x1:tlbls.length-0.5,y0:thr2,y1:thr2,xref:'x',yref:'y',line:{color:'rgba(255,255,255,0.2)',width:1,dash:'dot'}}];
+                if (thr2) b.shapes = [{type:'line',x0:-0.5,x1:tlbls.length-0.5,y0:thr2,y1:thr2,xref:'x',yref:'y',line:{color:cc.ref,width:1,dash:'dot'}}];
                 tryPlot(el, [{x:tlbls, y:tvals, type:'bar', marker:{color:barColors(tvals, thr2)}}], b);
             }
 
@@ -800,7 +801,7 @@
                 var b = mkBase();
                 b.xaxis = mkAx({type:'category', tickangle: actw.length > 6 ? -30 : 0});
                 b.yaxis = mkAx({ticksuffix:'%', range:[0,100]});
-                b.shapes = [{type:'line',x0:-0.5,x1:wrtl.length-0.5,y0:50,y1:50,xref:'x',yref:'y',line:{color:'rgba(255,255,255,0.2)',width:1,dash:'dot'}}];
+                b.shapes = [{type:'line',x0:-0.5,x1:wrtl.length-0.5,y0:50,y1:50,xref:'x',yref:'y',line:{color:cc.ref,width:1,dash:'dot'}}];
                 tryPlot(el, [{x:wrtl, y:wrtvl, type:'bar', marker:{color:barColors(wrtvl, 50)}}], b);
             }
 

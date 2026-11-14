@@ -303,9 +303,9 @@ function runTrendChart(wid, trades, gb) {
     }
     const { getDateStr, getPeriodKey } = trendFns();
     let plotted = null;
-    new Function('wid', 'trades', 'gb', 'getDateStr', 'getPeriodKey', 'pnlOf', 'mkBase', 'mkAx', 'GREEN', 'RED', 'tc', 'el', 'tryPlot',
+    new Function('wid', 'trades', 'gb', 'getDateStr', 'getPeriodKey', 'pnlOf', 'mkBase', 'mkAx', 'GREEN', 'RED', 'tc', 'cc', 'el', 'tryPlot',
         src.slice(start, end + 1))(wid, trades, gb, getDateStr, getPeriodKey, t => parseFloat(t.pnl) || 0, () => ({}), o => o || {},
-        'g', 'r', 't', {}, (el, data) => { plotted = data; });
+        'g', 'r', 't', { ref: 'ref', zero: 'zero', fade: () => 'f' }, {}, (el, data) => { plotted = data; });
     return plotted;
 }
 

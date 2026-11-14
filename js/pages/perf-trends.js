@@ -347,12 +347,13 @@
 
             // ── Plotly base layout ──────────────────────────────
             function chartBase(extraMargin) {
-                var tc = '#8b9aae', gc = 'rgba(255,255,255,0.07)';
+                var cc = getChartTheme();
+                var tc = cc.text, gc = cc.grid;
                 var ax = { gridcolor:gc, tickfont:{size:10,color:tc}, linecolor:gc, zeroline:false, automargin:true };
                 return {
                     paper_bgcolor:'transparent', plot_bgcolor:'transparent',
                     margin: extraMargin || {t:10,r:10,b:36,l:52},
-                    font: {family:'Inter,sans-serif', color:tc},
+                    font: {family:cc.font, color:tc},
                     showlegend: false,
                     _ax: ax
                 };
@@ -576,8 +577,9 @@
 
             // ── Chart rendering ──────────────────────────────────
             function renderTrendCharts(trades, m, layout) {
-                var tc = '#8b9aae', gc = 'rgba(255,255,255,0.07)';
-                var GREEN = 'rgba(34,197,94,0.75)', RED = 'rgba(239,68,68,0.75)';
+                var cc = getChartTheme();
+                var tc = cc.text, gc = cc.grid;
+                var GREEN = cc.fade('success', 0.75), RED = cc.fade('danger', 0.75);
                 var gb = _state.groupBy;
 
                 // Always return fresh objects — Plotly mutates layout objects in-place
@@ -592,7 +594,7 @@
                     return {
                         paper_bgcolor:'transparent', plot_bgcolor:'transparent',
                         margin: extraMargin || {t:10,r:10,b:36,l:52},
-                        font:{family:'Inter,sans-serif',color:tc},
+                        font:{family:cc.font,color:tc},
                         showlegend:false
                     };
                 }
@@ -627,8 +629,8 @@
                         var cum = calcCumSeries(trades);
                         if (!cum.length) return;
                         var xs = cum.map(function(p){return p.x;}), ys = cum.map(function(p){return p.y;});
-                        var lc = ys[ys.length-1] >= 0 ? '#22c55e' : '#ef4444';
-                        var fc = ys[ys.length-1] >= 0 ? 'rgba(34,197,94,0.10)' : 'rgba(239,68,68,0.10)';
+                        var lc = ys[ys.length-1] >= 0 ? cc.success : cc.danger;
+                        var fc = ys[ys.length-1] >= 0 ? cc.fade('success', 0.10) : cc.fade('danger', 0.10);
                         var b = mkBase();
                         b.xaxis = mkAx({type:'date'});
                         b.yaxis = mkAx({tickprefix:'$'});
@@ -668,9 +670,9 @@
                         b.yaxis = mkAx({tickprefix:'$'});
                         // Zero reference line so the recovery-to-zero level is always visible
                         b.shapes = [{type:'line',x0:ddXs[0],x1:ddXs[ddXs.length-1],xref:'x',
-                                      y0:0,y1:0,yref:'y',line:{color:'rgba(255,255,255,0.15)',width:1,dash:'dot'}}];
+                                      y0:0,y1:0,yref:'y',line:{color:cc.ref,width:1,dash:'dot'}}];
                         tryPlot(el, [{x:ddXs,y:ddYs,type:'scatter',mode:'lines',fill:'tozeroy',
-                                      fillcolor:'rgba(239,68,68,0.12)',line:{color:'#ef4444',width:2}}], b);
+                                      fillcolor:cc.fade('danger', 0.12),line:{color:cc.danger,width:2}}], b);
                     }
 
                     // ── Weekly P&L ───────────────────────────────
@@ -741,7 +743,7 @@
                         var b = mkBase();
                         // 50% reference line drawn as a layout shape (works with bar chart)
                         b.shapes = [{type:'line',x0:0,x1:1,xref:'paper',y0:50,y1:50,yref:'y',
-                                      line:{color:'rgba(255,255,255,0.2)',width:1,dash:'dot'}}];
+                                      line:{color:cc.ref,width:1,dash:'dot'}}];
                         b.xaxis = mkAx({type:'category', tickangle:-45, nticks:12});
                         b.yaxis = mkAx({ticksuffix:'%', range:[0,100]});
                         tryPlot(el, [{x:wr_x, y:wr_y, type:'bar',
@@ -778,7 +780,7 @@
                         var rdColors = rv.map(function(v){ return v<=33 ? GREEN : v<=66 ? 'rgba(251,146,60,0.75)' : RED; });
                         var b = mkBase({t:10,r:10,b:58,l:52});
                         b.shapes = [{type:'line',x0:0,x1:1,xref:'paper',y0:50,y1:50,yref:'y',
-                                      line:{color:'rgba(255,255,255,0.2)',width:1,dash:'dot'}}];
+                                      line:{color:cc.ref,width:1,dash:'dot'}}];
                         b.xaxis = mkAx({type:'category', tickangle:-45, nticks:10});
                         b.yaxis = mkAx({ticksuffix:'%', range:[0,100]});
                         tryPlot(el, [{x:rk, y:rv, type:'bar', marker:{color:rdColors}}], b);

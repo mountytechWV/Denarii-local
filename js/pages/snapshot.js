@@ -302,12 +302,13 @@
             // ── Plotly charts ────────────────────────────────────
             function snapRenderCharts(trades, m, layout) {
                 var bg   = 'transparent';
-                var gc   = 'rgba(255,255,255,0.07)';
-                var tc   = '#8b9aae';
+                var cc   = getChartTheme();
+                var gc   = cc.grid;
+                var tc   = cc.text;
                 var ax   = { gridcolor:gc, tickfont:{size:11,color:tc}, linecolor:gc, zeroline:false };
                 var base = { paper_bgcolor:bg, plot_bgcolor:bg,
                              margin:{t:10,r:10,b:36,l:50},
-                             font:{family:'Inter,sans-serif',color:tc}, showlegend:false };
+                             font:{family:cc.font,color:tc}, showlegend:false };
                 layout.forEach(function(item) {
                     var el = document.getElementById('snap-chart-'+item.id);
                     if (!el) return;
@@ -315,11 +316,11 @@
                     if (item.wid==='equity-curve' && m.cumPnl.length) {
                         var xs = m.cumPnl.map(function(p){return p.date;});
                         var ys = m.cumPnl.map(function(p){return p.cum;});
-                        var lc = ys[ys.length-1]>=0?'#22c55e':'#ef4444';
+                        var lc = ys[ys.length-1]>=0?cc.success:cc.danger;
                         try { Plotly.react(el,[{
                             x:xs,y:ys,type:'scatter',mode:'lines',
                             fill:'tozeroy',
-                            fillcolor:ys[ys.length-1]>=0?'rgba(34,197,94,0.12)':'rgba(239,68,68,0.12)',
+                            fillcolor:ys[ys.length-1]>=0?cc.fade('success',0.12):cc.fade('danger',0.12),
                             line:{color:lc,width:2}
                         }],Object.assign({},base,{xaxis:Object.assign({},ax),yaxis:Object.assign({},ax,{tickprefix:'$'})}),
                         {responsive:true,displayModeBar:false}); } catch(e){}
@@ -330,7 +331,7 @@
                         var vals = days.map(function(d){return m.dailyMap[d];});
                         try { Plotly.react(el,[{
                             x:days,y:vals,type:'bar',
-                            marker:{color:vals.map(function(v){return v>=0?'rgba(34,197,94,0.75)':'rgba(239,68,68,0.75)';})}
+                            marker:{color:vals.map(function(v){return v>=0?cc.fade('success',0.75):cc.fade('danger',0.75);})}
                         }],Object.assign({},base,{xaxis:Object.assign({},ax),yaxis:Object.assign({},ax,{tickprefix:'$'})}),
                         {responsive:true,displayModeBar:false}); } catch(e){}
                     }
@@ -342,7 +343,7 @@
                         var sv=sn.map(function(n){return sm[n];});
                         try { Plotly.react(el,[{
                             x:sv,y:sn,type:'bar',orientation:'h',
-                            marker:{color:sv.map(function(v){return v>=0?'rgba(34,197,94,0.75)':'rgba(239,68,68,0.75)';})}
+                            marker:{color:sv.map(function(v){return v>=0?cc.fade('success',0.75):cc.fade('danger',0.75);})}
                         }],Object.assign({},base,{
                             margin:{t:10,r:10,b:36,l:100},
                             xaxis:Object.assign({},ax,{tickprefix:'$'}),

@@ -134,6 +134,14 @@
                 return '<div class="snap-kpi-value '+(colorClass||'snap-kpi-neutral')+'">'+value+'</div>' +
                        '<div class="snap-kpi-sub">'+(sub||'')+'</div>';
             }
+            // Same KPI markup with a ticker badge on the value line.
+            function tickerKpiHtml(symbol, sub, colorClass) {
+                var badge = typeof window.DenariiTickerBadge === 'function' ? window.DenariiTickerBadge(symbol, 32) : '';
+                if (!badge) return kpiHtml(symbol, sub, colorClass);
+                return '<div class="ds-ticker-line">' + badge +
+                       '<div class="snap-kpi-value '+(colorClass||'snap-kpi-neutral')+'">'+symbol+'</div></div>' +
+                       '<div class="snap-kpi-sub">'+(sub||'')+'</div>';
+            }
 
             // ── Classification badge ──────────────────────────
             function classificationBadge(label) {
@@ -158,7 +166,7 @@
                 'sym-best-symbol': function(id, trades, symbols, sz) {
                     if (!symbols.length) return widgetHtml(id, 'Best Symbol', '<div class="snap-empty">No data.</div>', sz);
                     var best = symbols[0]; // already sorted desc by pnl
-                    return widgetHtml(id, 'Best Symbol', kpiHtml(
+                    return widgetHtml(id, 'Best Symbol', tickerKpiHtml(
                         best.symbol,
                         (best.pnl >= 0 ? '+' : '') + fmt$(best.pnl) + ' · ' + best.count + ' trade' + (best.count !== 1 ? 's' : ''),
                         pnlColorClass(best.pnl)), sz);
@@ -167,7 +175,7 @@
                 'sym-worst-symbol': function(id, trades, symbols, sz) {
                     if (!symbols.length) return widgetHtml(id, 'Worst Symbol', '<div class="snap-empty">No data.</div>', sz);
                     var worst = symbols[symbols.length - 1];
-                    return widgetHtml(id, 'Worst Symbol', kpiHtml(
+                    return widgetHtml(id, 'Worst Symbol', tickerKpiHtml(
                         worst.symbol,
                         (worst.pnl >= 0 ? '+' : '') + fmt$(worst.pnl) + ' · ' + worst.count + ' trade' + (worst.count !== 1 ? 's' : ''),
                         pnlColorClass(worst.pnl)), sz);
@@ -297,12 +305,13 @@
             // ── Chart rendering ───────────────────────────────
             function symRenderCharts(symbols, layout) {
                 var bg   = 'transparent';
-                var gc   = 'rgba(255,255,255,0.07)';
-                var tc   = '#8b9aae';
+                var cc   = getChartTheme();
+                var gc   = cc.grid;
+                var tc   = cc.text;
                 var ax   = { gridcolor: gc, tickfont: { size: 11, color: tc }, linecolor: gc, zeroline: false };
                 var base = { paper_bgcolor: bg, plot_bgcolor: bg,
                              margin: { t: 10, r: 10, b: 36, l: 80 },
-                             font: { family: 'Inter,sans-serif', color: tc }, showlegend: false };
+                             font: { family: cc.font, color: tc }, showlegend: false };
 
                 layout.forEach(function(item) {
                     var el = document.getElementById('sym-chart-' + item.id);
@@ -315,7 +324,7 @@
                         var wVals  = winners.map(function(s) { return s.pnl; }).reverse();
                         try { Plotly.react(el, [{
                             x: wVals, y: wNames, type: 'bar', orientation: 'h',
-                            marker: { color: 'rgba(34,197,94,0.75)' },
+                            marker: { color: cc.fade('success', 0.75) },
                             hovertemplate: '%{y}: +$%{x:.2f}<extra></extra>'
                         }], Object.assign({}, base, {
                             xaxis: Object.assign({}, ax, { tickprefix: '$' }),
@@ -331,7 +340,7 @@
                         var lVals  = losers.map(function(s) { return s.pnl; });
                         try { Plotly.react(el, [{
                             x: lVals, y: lNames, type: 'bar', orientation: 'h',
-                            marker: { color: 'rgba(239,68,68,0.75)' },
+                            marker: { color: cc.fade('danger', 0.75) },
                             hovertemplate: '%{y}: $%{x:.2f}<extra></extra>'
                         }], Object.assign({}, base, {
                             xaxis: Object.assign({}, ax, { tickprefix: '$' }),
@@ -361,10 +370,14 @@
                             hole: 0.45,
                             marker: { colors: colors },
                             textinfo: 'label+percent',
-                            textfont: { size: 11, color: '#fff' },
+                            textposition: 'inside',
+                            insidetextorientation: 'horizontal',
+                            textfont: { size: 12, color: colors.slice(0, labels.length).map(cc.textOn) },
                             hovertemplate: '%{label}: %{value} trades (%{percent})<extra></extra>'
                         }], Object.assign({}, base, {
-                            margin: { t: 10, r: 10, b: 10, l: 10 }
+                            margin: { t: 10, r: 10, b: 10, l: 10 },
+                            // Labels that would shrink below 11px are hidden; hover still shows them.
+                            uniformtext: { minsize: 11, mode: 'hide' }
                         }), { responsive: true, displayModeBar: false }); } catch(e) {}
                     }
                 });

@@ -236,6 +236,15 @@
         var subEl   = document.getElementById('journal-editor-subtitle');
         if (titleEl) titleEl.textContent = (trade.symbol || 'Trade') + ' — ' + entryDate;
         if (subEl)   subEl.textContent   = side + ' · ' + pnlStr;
+        _jnlRenderEditorBadge(trade);
+    }
+
+    // Ticker badge beside the title; the title text itself is untouched.
+    function _jnlRenderEditorBadge(trade) {
+        var badgeEl = document.getElementById('jnl-editor-badge');
+        if (!badgeEl) return;
+        badgeEl.innerHTML = typeof window.DenariiTickerBadge === 'function'
+            ? window.DenariiTickerBadge(trade && trade.symbol, 40) : '';
     }
 
     // Shared persist path — writes current DOM state into the trade record,
@@ -787,6 +796,7 @@
         const side = _jnlSideLabel(trade);
         document.getElementById('journal-editor-title').textContent = `${trade.symbol || 'Trade'} — ${entryDate}`;
         document.getElementById('journal-editor-subtitle').textContent = `${side} · ${pnlStr}`;
+        _jnlRenderEditorBadge(trade);
 
         // Broker account dropdown
         const brokerSel = document.getElementById('jnl-broker-account');

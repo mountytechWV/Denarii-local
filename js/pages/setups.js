@@ -695,8 +695,9 @@
 
             // ── Chart rendering ────────────────────────────────
             function renderSetupCharts(ranked, trades, layout) {
-                var tc = '#8b9aae', gc = 'rgba(255,255,255,0.07)';
-                var GREEN = 'rgba(34,197,94,0.75)', RED = 'rgba(239,68,68,0.75)', BLUE = 'rgba(96,165,250,0.75)';
+                var cc = getChartTheme();
+                var tc = cc.text, gc = cc.grid;
+                var GREEN = cc.fade('success', 0.75), RED = cc.fade('danger', 0.75), BLUE = 'rgba(96,165,250,0.75)';
                 var SERIES_COLORS = ['#60a5fa','#34d399','#f472b6','#fbbf24','#a78bfa','#f97316','#38bdf8','#4ade80'];
 
                 function mkAx(extra) {
@@ -709,7 +710,7 @@
                     return {
                         paper_bgcolor:'transparent', plot_bgcolor:'transparent',
                         margin: m || {t:10,r:10,b:36,l:130},
-                        font:{family:'Inter,sans-serif',color:tc},
+                        font:{family:cc.font,color:tc},
                         showlegend:false
                     };
                 }
@@ -734,7 +735,7 @@
                         var yv = sorted.map(function(s){return s.name;}),
                             xv = sorted.map(function(s){return s.pnl;});
                         var b = mkBase({t:10,r:20,b:36,l:Math.min(180, Math.max(100, Math.max.apply(null, yv.map(function(n){return n.length;})) * 7))});
-                        b.xaxis = mkAx({tickprefix:'$', zeroline:true, zerolinecolor:'rgba(255,255,255,0.12)', zerolinewidth:1});
+                        b.xaxis = mkAx({tickprefix:'$', zeroline:true, zerolinecolor:cc.zero, zerolinewidth:1});
                         b.yaxis = mkAx({type:'category', automargin:true});
                         tryPlot(el, [{x:xv, y:yv, type:'bar', orientation:'h',
                             marker:{color:xv.map(function(v){return v>=0?GREEN:RED;})}}], b);
@@ -746,7 +747,7 @@
                         var avgy = sorted.map(function(s){return s.name;}),
                             avgx = sorted.map(function(s){return s.avgPnl;});
                         var ba = mkBase({t:10,r:20,b:36,l:120});
-                        ba.xaxis = mkAx({tickprefix:'$', zeroline:true, zerolinecolor:'rgba(255,255,255,0.12)', zerolinewidth:1});
+                        ba.xaxis = mkAx({tickprefix:'$', zeroline:true, zerolinecolor:cc.zero, zerolinewidth:1});
                         ba.yaxis = mkAx({type:'category', automargin:true});
                         tryPlot(el, [{x:avgx, y:avgy, type:'bar', orientation:'h',
                             marker:{color:avgx.map(function(v){return v>=0?GREEN:RED;})}}], ba);
@@ -761,9 +762,9 @@
                         var pfy = pfSorted.map(function(s){return s.name;}),
                             pfx = pfSorted.map(function(s){return isFinite(s.profitFactor)?Math.min(s.profitFactor,20):20;});
                         var bp = mkBase({t:10,r:20,b:36,l:120});
-                        bp.xaxis = mkAx({zeroline:true, zerolinecolor:'rgba(255,255,255,0.12)', zerolinewidth:1});
+                        bp.xaxis = mkAx({zeroline:true, zerolinecolor:cc.zero, zerolinewidth:1});
                         bp.yaxis = mkAx({type:'category', automargin:true});
-                        bp.shapes = [{type:'line',x0:1,x1:1,xref:'x',y0:0,y1:1,yref:'paper',line:{color:'rgba(255,255,255,0.2)',width:1,dash:'dot'}}];
+                        bp.shapes = [{type:'line',x0:1,x1:1,xref:'x',y0:0,y1:1,yref:'paper',line:{color:cc.ref,width:1,dash:'dot'}}];
                         tryPlot(el, [{x:pfx, y:pfy, type:'bar', orientation:'h',
                             marker:{color:pfx.map(function(v){return v>=1?GREEN:RED;})}}], bp);
                     }
@@ -775,7 +776,7 @@
                         var exy = exSorted.map(function(s){return s.name;}),
                             exx = exSorted.map(function(s){return s.expectancy;});
                         var be = mkBase({t:10,r:20,b:36,l:120});
-                        be.xaxis = mkAx({tickprefix:'$', zeroline:true, zerolinecolor:'rgba(255,255,255,0.12)', zerolinewidth:1});
+                        be.xaxis = mkAx({tickprefix:'$', zeroline:true, zerolinecolor:cc.zero, zerolinewidth:1});
                         be.yaxis = mkAx({type:'category', automargin:true});
                         tryPlot(el, [{x:exx, y:exy, type:'bar', orientation:'h',
                             marker:{color:exx.map(function(v){return v>=0?GREEN:RED;})}}], be);
@@ -790,7 +791,7 @@
                         var bw = mkBase({t:10,r:20,b:36,l:120});
                         bw.xaxis = mkAx({ticksuffix:'%', range:[0,100], zeroline:false});
                         bw.yaxis = mkAx({type:'category', automargin:true});
-                        bw.shapes = [{type:'line',x0:50,x1:50,xref:'x',y0:0,y1:1,yref:'paper',line:{color:'rgba(255,255,255,0.2)',width:1,dash:'dot'}}];
+                        bw.shapes = [{type:'line',x0:50,x1:50,xref:'x',y0:0,y1:1,yref:'paper',line:{color:cc.ref,width:1,dash:'dot'}}];
                         tryPlot(el, [{x:wrx, y:wry, type:'bar', orientation:'h',
                             marker:{color:wrx.map(function(v){return v>=50?GREEN:RED;})}}], bw);
                     }
@@ -803,7 +804,7 @@
                         var awWin  = awSorted.map(function(s){return s.avgWin;});
                         var awLoss = awSorted.map(function(s){return s.avgLoss;});
                         var bl = mkBase({t:10,r:10,b:36,l:120});
-                        bl.xaxis = mkAx({tickprefix:'$', zeroline:true, zerolinecolor:'rgba(255,255,255,0.12)', zerolinewidth:1});
+                        bl.xaxis = mkAx({tickprefix:'$', zeroline:true, zerolinecolor:cc.zero, zerolinewidth:1});
                         bl.yaxis = mkAx({type:'category', automargin:true});
                         bl.barmode = 'overlay';
                         bl.showlegend = true;
@@ -834,7 +835,7 @@
                         var scy = scSorted.map(function(s){return s.name;}),
                             scx = scSorted.map(function(s){return s.pnl;});
                         var bsc = mkBase({t:10,r:20,b:36,l:120});
-                        bsc.xaxis = mkAx({tickprefix:'$', zeroline:true, zerolinecolor:'rgba(255,255,255,0.12)', zerolinewidth:1});
+                        bsc.xaxis = mkAx({tickprefix:'$', zeroline:true, zerolinecolor:cc.zero, zerolinewidth:1});
                         bsc.yaxis = mkAx({type:'category', automargin:true});
                         tryPlot(el, [{x:scx, y:scy, type:'bar', orientation:'h',
                             marker:{color:scx.map(function(v){return v>=0?GREEN:RED;})}}], bsc);
@@ -848,7 +849,7 @@
                         var lly = llSorted.map(function(s){return s.name;}),
                             llx = llSorted.map(function(s){return s.largestLoss;});
                         var bll = mkBase({t:10,r:20,b:36,l:120});
-                        bll.xaxis = mkAx({tickprefix:'$', zeroline:true, zerolinecolor:'rgba(255,255,255,0.12)', zerolinewidth:1});
+                        bll.xaxis = mkAx({tickprefix:'$', zeroline:true, zerolinecolor:cc.zero, zerolinewidth:1});
                         bll.yaxis = mkAx({type:'category', automargin:true});
                         tryPlot(el, [{x:llx, y:lly, type:'bar', orientation:'h',
                             marker:{color:RED}}], bll);

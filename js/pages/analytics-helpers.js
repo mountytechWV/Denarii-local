@@ -6,6 +6,7 @@
         //   - analyzePositionSize
         //   - analyzeTickers
         //   - analyzeTimePatterns
+        //   - getChartTheme        (Plotly colors for the analytics pages)
         // ═══════════════════════════════════════════════════════
         (function () {
             'use strict';
@@ -166,10 +167,115 @@
                 return { dayOfWeek: dayStats, first10min: first10Stats, restOfDay: restStats };
             }
 
+            // ========== CHART THEME ==========
+
+            // Plotly needs plain color strings, so each token is resolved on a
+            // probe element (var() and color-mix() included) and turned into rgba().
+            var _probe = null;
+            var _canvasCtx = null;
+
+            function parseColor(str) {
+                var m = /^rgba?\(([^)]+)\)$/.exec(str);
+                if (m) {
+                    var p = m[1].split(/[\s,\/]+/).filter(Boolean).map(parseFloat);
+                    return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 };
+                }
+                m = /^color\(srgb ([^)]+)\)$/.exec(str);
+                if (m) {
+                    var q = m[1].split(/[\s\/]+/).filter(Boolean).map(parseFloat);
+                    return { r: q[0] * 255, g: q[1] * 255, b: q[2] * 255, a: q.length > 3 ? q[3] : 1 };
+                }
+                // Any other color syntax: paint one pixel and read it back.
+                if (!_canvasCtx) {
+                    var cv = document.createElement('canvas');
+                    cv.width = cv.height = 1;
+                    _canvasCtx = cv.getContext('2d', { willReadFrequently: true });
+                }
+                _canvasCtx.clearRect(0, 0, 1, 1);
+                _canvasCtx.fillStyle = str;
+                _canvasCtx.fillRect(0, 0, 1, 1);
+                var d = _canvasCtx.getImageData(0, 0, 1, 1).data;
+                return { r: d[0], g: d[1], b: d[2], a: d[3] / 255 };
+            }
+
+            function resolveToken(name, fallback) {
+                try {
+                    if (!_probe) {
+                        _probe = document.createElement('span');
+                        _probe.style.display = 'none';
+                    }
+                    if (!_probe.isConnected) document.body.appendChild(_probe);
+                    _probe.style.color = '';
+                    _probe.style.color = 'var(' + name + ')';
+                    return parseColor(getComputedStyle(_probe).color);
+                } catch (e) {
+                    return parseColor(fallback);
+                }
+            }
+
+            function rgba(c, alpha) {
+                var a = alpha == null ? c.a : alpha;
+                return 'rgba(' + Math.round(c.r) + ',' + Math.round(c.g) + ',' + Math.round(c.b) + ',' + (+a.toFixed(3)) + ')';
+            }
+
+            function luminance(c) {
+                var l = [c.r, c.g, c.b].map(function(v) {
+                    v /= 255;
+                    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+                });
+                return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2];
+            }
+            function contrast(a, b) {
+                var x = luminance(a), y = luminance(b);
+                return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+            }
+
+            // Current theme's chart colors. Called at render time, so every chart
+            // takes the active theme's values whenever it draws.
+            function getChartTheme() {
+                var c = {
+                    grid:       resolveToken('--chart-grid', 'rgba(255,255,255,0.07)'),
+                    text:       resolveToken('--chart-text', '#8b9aae'),
+                    textStrong: resolveToken('--text-primary', '#f5f5f5'),
+                    surface:    resolveToken('--card-bg', '#1d1d20'),
+                    success:    resolveToken('--success', '#22c55e'),
+                    danger:     resolveToken('--danger', '#ef4444'),
+                    primary:    resolveToken('--primary', '#6c63ff')
+                };
+                var font = '';
+                try { font = getComputedStyle(document.documentElement).getPropertyValue('--chart-font').trim(); } catch (e) {}
+                return {
+                    grid:    rgba(c.grid),
+                    text:    rgba(c.text),
+                    font:    font || 'Inter,sans-serif',
+                    success: rgba(c.success),
+                    danger:  rgba(c.danger),
+                    primary: rgba(c.primary),
+                    zero:    rgba(c.textStrong, 0.2),   // zero lines
+                    ref:     rgba(c.textStrong, 0.3),   // dotted reference lines
+                    // A token at reduced opacity: fade('success', 0.75)
+                    fade: function(name, alpha) { return rgba(c[name], alpha); },
+                    // Label color for text drawn on a fill: whichever of the theme
+                    // text, the card surface, black or white contrasts most with
+                    // the fill as it appears over the card.
+                    textOn: function(fill) {
+                        var f = parseColor(fill), s = c.surface;
+                        var shown = { r: f.r * f.a + s.r * (1 - f.a), g: f.g * f.a + s.g * (1 - f.a), b: f.b * f.a + s.b * (1 - f.a) };
+                        var best = null, bestCr = 0;
+                        [c.textStrong, s, { r: 0, g: 0, b: 0 }, { r: 255, g: 255, b: 255 }].forEach(function(t) {
+                            var cr = contrast(t, shown);
+                            if (cr > bestCr) { bestCr = cr; best = t; }
+                        });
+                        return rgba(best, 1);
+                    }
+                };
+            }
+
             // ── Expose analysis functions for modern pages ──
             window.analyzeHoldTime      = analyzeHoldTime;
             window.analyzePositionSize  = analyzePositionSize;
             window.analyzeTickers       = analyzeTickers;
             window.analyzeTimePatterns  = analyzeTimePatterns;
+            window.getChartTheme        = getChartTheme;
 
         }());

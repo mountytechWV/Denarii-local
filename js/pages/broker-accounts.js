@@ -573,7 +573,7 @@
         document.querySelectorAll('.bac-tab-btn').forEach(function(btn) {
             var isActive = btn.dataset.bacTab === tabKey;
             btn.style.color = isActive ? 'var(--text-primary)' : 'var(--text-secondary)';
-            btn.style.borderBottomColor = isActive ? 'var(--primary, #3b82f6)' : 'transparent';
+            btn.style.borderBottomColor = isActive ? 'var(--tab-indicator)' : 'transparent';
         });
     }
 
