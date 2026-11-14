@@ -15,12 +15,16 @@ matching path in `index.html`.
 | `papaparse/5.4.1/` | `papaparse` | 5.4.1 | MIT (`LICENSE`) | Broker CSV import |
 | `marked/12.0.2/` | `marked` | 12.0.2 | MIT (`LICENSE.md`) | AI output Markdown |
 | `dompurify/3.4.17/` | `dompurify` | 3.4.17 | Apache-2.0 OR MPL-2.0 (`LICENSE`, `LICENSE-MPL`) | AI output sanitizing |
-| `fonts/inter/` | `@fontsource/inter` | 5.3.0 | SIL OFL 1.1 (`LICENSE`) | Inter latin 400/500/600/700, Plotly chart text |
+| `fonts/inter/` | `@fontsource/inter` | 5.3.0 | SIL OFL 1.1 (`LICENSE`) | Inter latin 400/500/600/700/800, body and Plotly chart text |
+| `fonts/archivo-narrow/` | `@fontsource/archivo-narrow` | 5.3.0 | SIL OFL 1.1 (`LICENSE`) | Archivo Narrow latin 500/600/700, figures in `css/denarii-ds.css` |
+
+Header images in img/headers were generated with Google Gemini and OpenAI ChatGPT.
 
 Notes:
 - `crypto-js` must stay at 4.1.1. Later versions changed defaults used by
   existing encrypted data. The npm package ships the unminified `crypto-js.js`.
-- `fonts/inter/inter.css` is written by hand (not copied); `npm run vendor`
-  copies only the woff2 files and `LICENSE` next to it.
+- `fonts/inter/inter.css` and `fonts/archivo-narrow/archivo-narrow.css` are
+  written by hand (not copied); `npm run vendor` copies only the woff2 files
+  and `LICENSE` next to them.
 - The `lightweight-charts` npm package has no separate NOTICE file. Its
   copyright and license header is kept at the top of the vendored file.

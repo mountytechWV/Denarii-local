@@ -50,21 +50,26 @@ function vendorLib(lib) {
   copyLicenses(src, destDir);
 }
 
-// Inter (latin subset) for Plotly chart text; vendor/fonts/inter/inter.css
-// is kept in the repo and points at these files.
-const INTER_WEIGHTS = [400, 500, 600, 700];
+// Fonts (latin subset, woff2) into vendor/fonts/<name>/. The <name>.css next
+// to them is kept in the repo and points at these files.
+//   Inter: body text and Plotly chart text.
+//   Archivo Narrow: figures in the design system (css/denarii-ds.css).
+const FONTS = [
+  { pkg: '@fontsource/inter',          name: 'inter',          weights: [400, 500, 600, 700, 800] },
+  { pkg: '@fontsource/archivo-narrow', name: 'archivo-narrow', weights: [500, 600, 700] },
+];
 
-function vendorInter() {
-  const src = pkgDir('@fontsource/inter');
+function vendorFont(font) {
+  const src = pkgDir(font.pkg);
   const version = JSON.parse(fs.readFileSync(path.join(src, 'package.json'), 'utf8')).version;
-  const destDir = path.join(VENDOR, 'fonts', 'inter');
-  console.log('@fontsource/inter@' + version);
-  for (const w of INTER_WEIGHTS) {
-    const f = 'inter-latin-' + w + '-normal.woff2';
+  const destDir = path.join(VENDOR, 'fonts', font.name);
+  console.log(font.pkg + '@' + version);
+  for (const w of font.weights) {
+    const f = font.name + '-latin-' + w + '-normal.woff2';
     copy(path.join(src, 'files', f), path.join(destDir, f));
   }
   copyLicenses(src, destDir);
 }
 
 LIBS.forEach(vendorLib);
-vendorInter();
+FONTS.forEach(vendorFont);

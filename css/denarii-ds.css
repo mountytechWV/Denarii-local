@@ -1,0 +1,3734 @@
+/* ═══════════════════════════════════════════════════════════════════
+   DENARII DESIGN SYSTEM
+   Loaded after Denarii.css. Removing the <link> in index.html reverts it.
+
+   Token layers (docs/redesign-plan.md §3–4):
+     L0  structural   --ds-*            same in every theme, :root only
+     L1  theme color  existing tokens   defined in Denarii.css, untouched here
+                      + new tokens      derived from existing L1 in :root;
+                                        per-theme values only via
+                                        :root[data-theme="…"] (0,2,0)
+     L2  component    --btn-*, --kpi-*, --field-*, …  built from L0 + L1
+
+   Rule: never redeclare an existing Denarii.css token in a bare :root here;
+   this file loads later and would override every theme.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── L0 · STRUCTURAL ─────────────────────────────────────────────── */
+:root {
+    --ds-font-body:    'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --ds-font-display: var(--ds-font-body);
+    --ds-font-figure:  'Archivo Narrow', 'Inter', system-ui, sans-serif;
+    --ds-font-mono:    ui-monospace, 'SFMono-Regular', 'Cascadia Mono', Consolas, monospace;
+
+    --ds-text-xs:   11px;
+    --ds-text-sm:   12px;
+    --ds-text-base: 14px;
+    --ds-text-md:   15px;
+    --ds-text-lg:   18px;
+    --ds-text-xl:   22px;
+    --ds-text-2xl:  28px;
+    --ds-text-kpi:  26px;
+    --ds-text-hero: 36px;
+
+    --ds-weight-regular:  400;
+    --ds-weight-medium:   500;
+    --ds-weight-semibold: 600;
+    --ds-weight-bold:     700;
+    --ds-leading-tight:   1.2;
+    --ds-leading-normal:  1.5;
+
+    --ds-space-1: 4px;
+    --ds-space-2: 8px;
+    --ds-space-3: 12px;
+    --ds-space-4: 16px;
+    --ds-space-5: 20px;
+    --ds-space-6: 24px;
+    --ds-space-7: 32px;
+    --ds-space-8: 40px;
+
+    --ds-radius-sm:   6px;
+    --ds-radius-md:   8px;
+    --ds-radius-lg:   12px;
+    --ds-radius-pill: 999px;
+
+    --ds-border-width:    1px;
+    --ds-indicator-width: 3px;
+
+    --ds-control-h:    34px;
+    --ds-control-h-sm: 28px;
+
+    --ds-ease:     cubic-bezier(0.2, 0.8, 0.2, 1);
+    --ds-dur-fast: 120ms;
+    --ds-dur-base: 200ms;
+
+    --ds-z-sidebar: 90;
+    --ds-z-topbar:  80;
+    --ds-z-popover: 500;
+    --ds-z-modal:   1000;
+    --ds-z-toast:   1400;
+}
+
+/* ── L1 · THEME COLOR (derived defaults) ─────────────────────────── */
+/* Declared on html, the element that carries data-theme, so every var()
+   below resolves against the active theme. */
+:root {
+    --accent: var(--primary);
+
+    --text-muted:     color-mix(in srgb, var(--text-secondary) 70%, var(--bg-card));
+    --surface-hover:  color-mix(in srgb, var(--text-primary) 5%, transparent);
+    --surface-active: color-mix(in srgb, var(--text-primary) 9%, transparent);
+    --border-strong:  color-mix(in srgb, var(--border) 65%, var(--text-secondary));
+    --focus-ring:     color-mix(in srgb, var(--primary) 35%, transparent);
+
+    --accent-soft:  color-mix(in srgb, var(--primary) 12%, transparent);
+    --success-soft: color-mix(in srgb, var(--success) 12%, transparent);
+    --danger-soft:  color-mix(in srgb, var(--danger) 12%, transparent);
+    --warning-soft: color-mix(in srgb, var(--warning) 12%, transparent);
+
+    /* Readable text on the soft tints: the semantic hue pulled toward the
+       theme's own text color, so it darkens on light themes and lightens on dark. */
+    --info-text:    color-mix(in srgb, var(--primary) 55%, var(--text-primary));
+    --success-text: color-mix(in srgb, var(--success) 60%, var(--text-primary));
+    --danger-text:  color-mix(in srgb, var(--danger) 60%, var(--text-primary));
+    --warning-text: color-mix(in srgb, var(--warning) 55%, var(--text-primary));
+
+    --overlay-backdrop: rgba(5, 10, 20, 0.85);
+    --topbar-bg: var(--bg-card);
+    /* Photo on the right of the page header; set per theme below. */
+    --header-image: none;
+    --header-image-pos: right center;
+    /* Readability overlay strength over the photo, left → middle. */
+    --header-scrim-left: 85%;
+    --header-scrim-mid:  40%;
+
+    /* Read by getChartTheme() (js/pages/analytics-helpers.js) for Plotly.
+       Chart text leans 30% toward the theme text: plain --text-secondary
+       misses 4.5:1 on the card in four themes; this clears 5:1 in all. */
+    --chart-grid: color-mix(in srgb, var(--text-primary) 10%, transparent);
+    --chart-text: color-mix(in srgb, var(--text-secondary) 70%, var(--text-primary));
+    --chart-font: var(--ds-font-body);
+
+    /* Sidebar (docs/theme-token-spec.md). */
+    --sidebar-bg:               var(--bg-secondary);
+    --sidebar-text:             var(--text-secondary);
+    --sidebar-text-hover:       var(--text-primary);
+    --sidebar-text-active:      var(--text-primary);
+    --sidebar-text-muted:       var(--text-secondary);
+    --sidebar-text-group:       var(--sidebar-text-muted);
+    /* Group header holding the active page. Light sidebars may not use the
+       accent on section headers, so they override this with --sidebar-text. */
+    --sidebar-group-active:     var(--primary);
+    --sidebar-icon:             var(--sidebar-text);
+    --sidebar-hover-bg:         color-mix(in srgb, var(--text-primary) 4%, transparent);
+    --sidebar-active-bg:        color-mix(in srgb, var(--primary) 18%, transparent);
+    --sidebar-active-indicator: var(--primary);
+}
+
+/* Forged orange is Denarii Forged's brand. Everywhere else the brand accent
+   is the theme's own primary. */
+:root[data-theme]:not([data-theme="denarii-forged"]) {
+    --brand-orange: var(--primary);
+}
+
+/* ── L1 · PER-THEME VALUES ───────────────────────────────────────── */
+:root[data-theme="denarii-forged"] {
+    --topbar-bg: rgba(18, 18, 18, 0.84);
+    --sidebar-bg:               linear-gradient(180deg, #121212 0%, #0F0F10 100%);
+    --sidebar-text:             #B7AEA6;
+    --sidebar-text-active:      #FFF5E9;
+    --sidebar-text-muted:       rgba(255, 210, 122, 0.42);
+    --sidebar-hover-bg:         rgba(255, 106, 0, 0.08);
+    --sidebar-active-bg:        linear-gradient(135deg, rgba(255, 106, 0, 0.18), rgba(255, 210, 122, 0.06));
+    --sidebar-active-indicator: var(--brand-orange);
+}
+:root[data-theme="harbor-light"] {
+    --overlay-backdrop: rgba(44, 62, 80, 0.45);
+    --sidebar-bg:               linear-gradient(180deg, #8FA6B5 0%, #97AEBB 100%);
+    --sidebar-text:             #2C3E50;
+    --sidebar-text-hover:       #1E3344;
+    --sidebar-text-active:      #1E3344;
+    --sidebar-text-muted:       #4A6275;
+    --sidebar-text-group:       #4A6275;
+    --sidebar-group-active:     var(--sidebar-text);
+    --sidebar-icon:             #3A5468;
+    --sidebar-hover-bg:         rgba(255, 255, 255, 0.14);
+    --sidebar-active-bg:        rgba(30, 51, 68, 0.35);
+    --sidebar-active-indicator: #1E3344;
+}
+:root[data-theme="sage-journal"] {
+    --overlay-backdrop: rgba(58, 61, 47, 0.42);
+    --sidebar-bg:               linear-gradient(180deg, #8A8E76 0%, #939882 100%);
+    --sidebar-text:             rgba(255, 255, 255, 0.92);
+    --sidebar-text-hover:       #FFFFFF;
+    --sidebar-text-active:      #FFFFFF;
+    --sidebar-text-muted:       rgba(255, 255, 255, 0.72);
+    --sidebar-text-group:       rgba(255, 255, 255, 0.70);
+    --sidebar-group-active:     var(--sidebar-text);
+    --sidebar-hover-bg:         rgba(255, 255, 255, 0.15);
+    --sidebar-active-bg:        rgba(42, 45, 30, 0.40);
+    --sidebar-active-indicator: #FFFFFF;
+}
+:root[data-theme="dawn-ember"] {
+    --overlay-backdrop: rgba(70, 40, 22, 0.42);
+    --topbar-bg: rgba(255, 248, 240, 0.88);
+    --sidebar-bg:               linear-gradient(180deg, #B8835E 0%, #C09070 100%);
+    --sidebar-text:             rgba(255, 255, 255, 0.90);
+    --sidebar-text-hover:       #FFFFFF;
+    --sidebar-text-active:      #FFFFFF;
+    --sidebar-text-muted:       rgba(255, 255, 255, 0.62);
+    --sidebar-text-group:       rgba(255, 255, 255, 0.60);
+    --sidebar-group-active:     var(--sidebar-text);
+    --sidebar-hover-bg:         rgba(255, 255, 255, 0.15);
+    --sidebar-active-bg:        rgba(90, 48, 22, 0.45);
+    --sidebar-active-indicator: #FFFFFF;
+}
+:root[data-theme="blush-power"] {
+    --overlay-backdrop: rgba(60, 0, 30, 0.52);
+    --topbar-bg: rgba(255, 255, 255, 0.90);
+    --sidebar-bg:               linear-gradient(180deg, #AE1375 0%, #B25199 100%);
+    --sidebar-text:             rgba(255, 255, 255, 0.94);
+    --sidebar-text-hover:       #FFFFFF;
+    --sidebar-text-active:      #FFFFFF;
+    --sidebar-text-muted:       rgba(255, 255, 255, 0.75);
+    --sidebar-text-group:       rgba(255, 255, 255, 0.72);
+    --sidebar-group-active:     var(--sidebar-text);
+    --sidebar-hover-bg:         rgba(255, 255, 255, 0.16);
+    --sidebar-active-bg:        #7F2365;
+    --sidebar-active-indicator: #FFFFFF;
+}
+
+/* Header photos (img/headers/). Only the active theme's file is fetched. */
+:root[data-theme="denarii-forged"] { --header-image: url("../img/headers/denarii-forged.webp"); }
+:root[data-theme="soft-dark"]      { --header-image: url("../img/headers/soft-dark.webp"); }
+:root[data-theme="harbor-light"]   { --header-image: url("../img/headers/harbor-light.webp"); }
+:root[data-theme="sage-journal"]   { --header-image: url("../img/headers/sage-journal.webp"); }
+:root[data-theme="dawn-ember"]     { --header-image: url("../img/headers/dawn-ember.webp"); }
+:root[data-theme="warm-midnight"]  { --header-image: url("../img/headers/warm-midnight.webp"); }
+:root[data-theme="blush-power"]    { --header-image: url("../img/headers/blush-power.webp"); }
+/* Light themes: dark text needs a firmer scrim than the dark themes' light text. */
+:root:is([data-theme="harbor-light"], [data-theme="sage-journal"], [data-theme="dawn-ember"], [data-theme="blush-power"]) {
+    --header-scrim-left: 94%;
+    --header-scrim-mid:  55%;
+}
+
+/* ── L2 · COMPONENT ──────────────────────────────────────────────── */
+:root {
+    --btn-h:          var(--ds-control-h);
+    --btn-radius:     var(--ds-radius-md);
+    --btn-primary-bg: var(--primary);
+    --btn-primary-fg: var(--on-primary);
+
+    --card-radius: var(--ds-radius-lg);
+    --card-pad:    var(--ds-space-6);
+
+    --kpi-label-size:      var(--ds-text-xs);
+    --kpi-value-size:      var(--ds-text-kpi);
+    --kpi-hero-value-size: var(--ds-text-hero);
+
+    --field-h:      36px;
+    --field-radius: var(--ds-radius-sm);
+    --field-bg:     var(--bg-secondary);
+
+    --table-row-h:   40px;
+    --table-head-bg: var(--bg-secondary);
+
+    --tab-indicator: var(--primary);
+
+    --nav-item-h:    34px;
+    --nav-icon-size: 16px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SHARED COMPONENTS
+   Same specificity as the Denarii.css originals, so these win by load
+   order while [data-theme] overrides (0,2,0) and the :root ELEVATION
+   rules keep their say over theme colors and shadows.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Typography ── */
+body { font-family: var(--ds-font-body); }
+h1, h2, h3,
+.card-title,
+.modal h2 {
+    font-family: var(--ds-font-display);
+    letter-spacing: -0.01em;
+}
+.card-title { font-weight: var(--ds-weight-semibold); }
+
+/* Card values, KPI numbers and large tickers */
+.stat-value,
+.snap-kpi-value,
+.import-stat-value,
+.strategy-stat-value,
+.disc-split-value,
+.sym-class-tile-count {
+    font-family: var(--ds-font-figure);
+    font-weight: var(--ds-weight-bold);
+    letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+}
+/* Archivo Narrow sets smaller than Inter at the same size: ~10% up. */
+.snap-kpi-value { font-size: 28px; }
+
+/* Financial figures: digits line up as values change */
+td,
+.ds-num,
+.stat-value,
+.dt-pnl,
+.trade-pnl,
+#pnl-net, #pnl-gross,
+#jnl-pnl-net, #jnl-pnl-net-pct, #jnl-pnl-gross, #jnl-pnl-gross-pct,
+.snap-kpi-value,
+.import-stat-value,
+.mini-stat .value,
+.rv-w-kpi,
+.rv-metric-val,
+.dv-metric-value,
+.wv-metric-value,
+.cal-metric-pnl {
+    font-variant-numeric: tabular-nums;
+}
+.ds-num, td.num, th.num { text-align: right; }
+
+/* ── Buttons ── */
+.btn {
+    padding: 10px 18px;
+    border-radius: var(--btn-radius);
+    font-size: var(--ds-text-base);
+    font-weight: var(--ds-weight-semibold);
+}
+.btn-small {
+    padding: 8px 14px;
+    font-size: 13px;
+}
+.btn-primary {
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-fg);
+}
+.btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+}
+.btn-secondary:hover { border-color: var(--border-strong); }
+.btn-danger {
+    background: var(--danger);
+    color: var(--on-danger);
+}
+.btn-danger:hover { background: color-mix(in srgb, var(--danger) 86%, #000); }
+.btn:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* ── Cards ── */
+/* Top-level cards still take background-color, border-color and shadow from
+   the --card-* tokens via the ELEVATION block in Denarii.css. */
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--card-border);
+    border-radius: var(--card-radius);
+}
+.stat-card {
+    border: 1px solid var(--card-border);
+    border-radius: var(--card-radius);
+}
+
+/* ── Form fields ── */
+input:where(:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"])),
+select,
+textarea {
+    padding: 8px 12px;
+    border-radius: var(--field-radius);
+}
+input::placeholder,
+textarea::placeholder { color: var(--text-muted); }
+/* Solid ring, no blur. Filter-bar fields keep their own state until Stage 3. */
+input:focus:where(:not(.snap-sel, .snap-sym-input)),
+select:focus:where(:not(.snap-sel)),
+textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+/* ── Badges ── */
+.badge { border-radius: var(--ds-radius-sm); }
+.badge-edge       { background: var(--success-soft); color: var(--success-text); }
+.badge-marginal   { background: var(--warning-soft); color: var(--warning-text); }
+.badge-leak       { background: var(--danger-soft);  color: var(--danger-text); }
+.badge-bleeding   { background: color-mix(in srgb, var(--danger) 20%, transparent); color: var(--danger-text); }
+.badge-hemorrhage { background: color-mix(in srgb, var(--danger) 32%, transparent); color: var(--danger-text); }
+
+/* Asset and style badges are categories, not outcomes: they keep one hue per
+   category, with text pulled toward the theme text so it reads on light themes.
+   Stock / day trading take the theme accent instead of the old fixed blue. */
+.asset-badge,
+.style-badge { border-radius: var(--ds-radius-pill); }
+.asset-badge.stock,
+.style-badge.day_trading      { background: var(--accent-soft); color: var(--info-text); }
+.asset-badge.option,
+.style-badge.swing_trading    { color: color-mix(in srgb, #8b5cf6 70%, var(--text-primary)); }
+.asset-badge.future,
+.style-badge.position_trading { color: color-mix(in srgb, #f97316 70%, var(--text-primary)); }
+.asset-badge.crypto,
+.style-badge.scalping         { background: var(--warning-soft); color: var(--warning-text); }
+.asset-badge.bond,
+.style-badge.investing        { background: var(--success-soft); color: var(--success-text); }
+.asset-badge.forex,
+.style-badge.leaps            { color: color-mix(in srgb, #06b6d4 65%, var(--text-primary)); }
+.asset-badge.other            { background: var(--surface-active); color: var(--text-secondary); }
+
+.grade-badge { border-radius: var(--ds-radius-sm); }
+.grade-a-plus { background: color-mix(in srgb, var(--success) 24%, transparent); color: var(--success-text); }
+.grade-a      { background: var(--success-soft); color: var(--success-text); }
+.grade-b      { background: var(--warning-soft); color: var(--warning-text); }
+.grade-c      { background: color-mix(in srgb, var(--warning) 24%, transparent); color: var(--warning-text); }
+.grade-d      { background: var(--danger-soft); color: var(--danger-text); }
+.grade-f      { background: color-mix(in srgb, var(--danger) 24%, transparent); color: var(--danger-text); }
+
+/* ── Tabs and segmented pills ── */
+.tabs { gap: var(--ds-space-1); }
+.tab {
+    padding: 10px 16px;
+    font-size: var(--ds-text-base);
+    border-radius: var(--ds-radius-sm) var(--ds-radius-sm) 0 0;
+}
+.tab:hover { color: var(--text-primary); background: var(--surface-hover); }
+.tab.active { color: var(--text-primary); border-bottom-color: var(--tab-indicator); }
+.tab:focus-visible,
+.snap-pill:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+.snap-pill { border-radius: var(--ds-radius-pill); }
+.snap-pill:hover:not(.active) { border-color: var(--border-strong); }
+
+/* ── Modals: expand from center ── */
+/* Stays under the 250 ms focus/cleanup timeouts in openModal/closeModal. */
+.modal-content { border-radius: var(--ds-radius-lg); }
+.modal .modal-content {
+    transform: scale(0.96);
+    transform-origin: center;
+    transition: transform var(--ds-dur-base) var(--ds-ease);
+    box-shadow: var(--shadow-md);
+}
+.modal.active .modal-content {
+    transform: scale(1);
+    box-shadow: var(--shadow-lg);
+}
+#stock-chart-modal .modal-content { transform: scale(0.96); }
+#stock-chart-modal.active .modal-content { transform: scale(1); }
+/* Phones keep the bottom sheet. */
+@media (max-width: 768px) {
+    .modal .modal-content {
+        transform: translateY(100%);
+        border-radius: var(--ds-radius-lg) var(--ds-radius-lg) 0 0;
+    }
+    .modal.active .modal-content { transform: translateY(0); }
+}
+
+/* ── Tables ── */
+/* The dashboard trade table has its own rules under DASHBOARD below. */
+:where(table:not(.dash-table)) th { letter-spacing: 0.06em; }
+:where(table:not(.dash-table)) td { padding: 10px 12px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   SIDEBAR
+   Visual only. Width, height, overflow, position, flex and display on
+   .sidebar / .sidebar-nav / .sidebar-footer stay with Denarii.css.
+   Theme nav rules there are (0,2,0)–(0,3,0); these match and win on
+   load order.
+   ═══════════════════════════════════════════════════════════════════ */
+.sidebar-nav .nav-item {
+    min-height: var(--nav-item-h);
+    color: var(--sidebar-text);
+    border-color: transparent;
+    border-radius: var(--ds-radius-md);
+}
+.sidebar-nav .nav-item:hover {
+    color: var(--sidebar-text-hover);
+    background: var(--sidebar-hover-bg);
+    border-color: transparent;
+}
+/* Active = background + left indicator. Weight and size never change. */
+.sidebar-nav .nav-item.active,
+.sidebar-nav .nav-item.active:hover {
+    color: var(--sidebar-text-active);
+    background: var(--sidebar-active-bg);
+    border-color: transparent;
+    box-shadow: inset var(--ds-indicator-width) 0 0 var(--sidebar-active-indicator);
+}
+
+/* Icons: one size and stroke. CSS overrides the SVG presentation attributes. */
+.sidebar-nav .nav-item-icon {
+    width: var(--nav-icon-size);
+    height: var(--nav-icon-size);
+    color: var(--sidebar-icon);
+    opacity: 1;
+}
+.sidebar-nav .nav-child .nav-item-icon {
+    width: var(--nav-icon-size) !important;
+    height: var(--nav-icon-size) !important;
+}
+.sidebar-nav .nav-item:hover .nav-item-icon,
+.sidebar-nav .nav-item.active .nav-item-icon,
+.sidebar-nav .nav-group-header:hover .nav-item-icon { color: inherit; }
+.sidebar-nav .nav-item-icon svg {
+    width: var(--nav-icon-size);
+    height: var(--nav-icon-size);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Section labels (group headers): quieter than items, open or closed. */
+.sidebar-nav .nav-group-header {
+    min-height: var(--nav-item-h);
+    color: var(--sidebar-text-group);
+    font-size: var(--ds-text-xs);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-radius: var(--ds-radius-md);
+}
+.sidebar-nav .nav-group-header.open { color: var(--sidebar-text-group); }
+.sidebar-nav .nav-group-header.has-active-child { color: var(--sidebar-group-active); }
+.sidebar-nav .nav-group-header:hover {
+    color: var(--sidebar-text);
+    background: var(--sidebar-hover-bg);
+}
+.nav-section-label {
+    font-size: var(--ds-text-xs);
+    color: var(--sidebar-text-muted);
+}
+/* Footer profile name, formerly inline var(--text-primary). */
+.sidebar-profile-name { color: var(--sidebar-text); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   WORKSPACE TOPBAR
+   ═══════════════════════════════════════════════════════════════════ */
+/* (0,2,1) beats the per-theme .workspace-topbar rules in Denarii.css. */
+main.workspace > .workspace-topbar {
+    background: var(--topbar-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--card-radius);
+    box-shadow: var(--shadow-sm);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+/* Theme photo covering the card, cropped top and bottom on wide cards.
+   A --topbar-bg scrim on top of it keeps the title readable on the left.
+   The title column is capped at 58% of the card (and the subtitle at 720px),
+   so the scrim stays at full strength to just past that column, ending at
+   min(58% + 32px, 766px), and only then fades out over the photo.
+   z-index -1 paints it above the card background (the topbar is its own
+   stacking context) and below content. */
+main.workspace > .workspace-topbar::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+        linear-gradient(90deg,
+            color-mix(in srgb, var(--topbar-bg) var(--header-scrim-left), transparent) 0%,
+            color-mix(in srgb, var(--topbar-bg) var(--header-scrim-left), transparent) min(calc(58% + 32px), 766px),
+            color-mix(in srgb, var(--topbar-bg) var(--header-scrim-mid), transparent) calc(min(calc(58% + 32px), 766px) + min(14%, 140px)),
+            transparent calc(min(calc(58% + 32px), 766px) + min(26%, 300px))),
+        var(--header-image) var(--header-image-pos) / cover no-repeat;
+}
+@media (min-width: 769px) {
+    /* Title column: wraps before it reaches the photo. */
+    main.workspace > .workspace-topbar .workspace-topbar-inner > :first-child { max-width: 58%; }
+}
+@media (max-width: 768px), (prefers-reduced-data: reduce) {
+    main.workspace > .workspace-topbar::before { content: none; }
+}
+/* Blush's translucent Lock button turns solid where it sits on the photo. */
+[data-theme="blush-power"] .workspace-actions .btn-secondary { background: #fff; }
+/* Size stays in Denarii.css so the mobile breakpoints keep working. */
+.workspace-page-title {
+    font-family: var(--ds-font-display);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    color: var(--text-primary);
+}
+.workspace-page-subtitle { line-height: var(--ds-leading-normal); }
+
+/* Account selector, formerly an inline style on #filter-broker-account.
+   (0,2,0) so the [data-theme] select rules don't take over. */
+.workspace-actions .topbar-select {
+    font-size: 13px;
+    padding: 5px 10px;
+    border-radius: var(--ds-radius-md);
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DASHBOARD
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── KPI row ── */
+.stat-label {
+    font-size: var(--kpi-label-size);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.stat-value {
+    font-size: var(--kpi-value-size);
+    font-weight: var(--ds-weight-bold);
+    line-height: var(--ds-leading-tight);
+}
+/* Mirrors the Denarii.css breakpoints, which this file would otherwise mask. */
+@media (max-width: 1100px) { .stat-value { font-size: 22px; } }
+@media (max-width: 768px)  { .stat-value { font-size: 20px; } }
+
+/* Desktop: all seven cards in one row, Total P&L on a wider track. */
+#dashboard-stats {
+    grid-auto-flow: row dense;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) repeat(5, minmax(0, 1fr));
+    gap: var(--ds-space-3);
+}
+#dashboard-stats > .stat-card {
+    min-width: 0;
+    padding: var(--ds-space-4) var(--ds-space-3);
+    box-shadow: var(--card-edge), var(--shadow-sm);
+    container-type: inline-size;
+}
+/* Values and labels scale with their card (16.5cqi fits "-$12,345.67" in Archivo Narrow);
+   the token size is the ceiling, 15px / 10px the floor. */
+@media (min-width: 769px) {
+    #dashboard-stats .stat-value {
+        font-size: clamp(15px, 16.5cqi, var(--kpi-value-size));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    #dashboard-stats .stat-label { font-size: clamp(10px, 9cqi, var(--kpi-label-size)); }
+}
+/* One row from 1100px: padding and gaps tighten with the viewport. */
+@media (min-width: 1100px) {
+    #dashboard-stats { gap: clamp(6px, 0.75vw, 12px); }
+    #dashboard-stats > .stat-card { padding: clamp(10px, 1vw, 16px) clamp(8px, 0.75vw, 12px); }
+    #dashboard-stats .stat-label { letter-spacing: 0.04em; }
+}
+/* Below 1100px: 4 + 4 with the hero spanning two. */
+@media (max-width: 1099.98px) {
+    #dashboard-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    #dashboard-stats > .stat-card:nth-child(2) { grid-column: span 2; }
+}
+@media (max-width: 900px) {
+    #dashboard-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 768px) {
+    #dashboard-stats { grid-template-columns: 1fr; }
+}
+/* Total P&L hero. Depends on updateDashboard emitting it second. */
+#dashboard-stats > .stat-card:nth-child(2) {
+    position: relative;
+    overflow: hidden;
+}
+#dashboard-stats > .stat-card:nth-child(2)::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--ds-indicator-width);
+    background: var(--border-strong);
+}
+#dashboard-stats > .stat-card:nth-child(2):has(.stat-value.positive)::before { background: var(--success); }
+#dashboard-stats > .stat-card:nth-child(2):has(.stat-value.negative)::before { background: var(--danger); }
+#dashboard-stats > .stat-card:nth-child(2) .stat-value { font-size: clamp(15px, 16.5cqi, var(--kpi-hero-value-size)); }
+/* One-column grid on phones: a span would add an implicit column. */
+@media (max-width: 768px) {
+    #dashboard-stats > .stat-card:nth-child(2) { grid-column: auto; }
+    #dashboard-stats > .stat-card:nth-child(2) .stat-value { font-size: 24px; }
+}
+
+/* ── KPI graphics (Stage 8b) ──
+   Drawn by updateDashboard (_kpiSegMeter / _kpiSparkline / _kpiWonLost /
+   _kpiDonut / _kpiGauge / _kpiBalance). Every card is a flex column so the graphics sit
+   on the bottom edge and the row keeps one height; Denarii.css sets no
+   display on .stat-card. */
+#dashboard-stats > .stat-card {
+    display: flex;
+    flex-direction: column;
+}
+.kpi-viz {
+    flex: 0 0 auto;
+    margin-top: auto;
+    padding-top: 8px;
+}
+.kpi-win  { color: var(--success); }
+.kpi-loss { color: var(--danger); }
+
+/* Total Trades: ten-block meter above the W / L subtitle. */
+.kpi-meter { display: flex; gap: 2px; }
+.kpi-seg {
+    flex: 1 1 0;
+    height: 14px;
+    border-radius: 2px;
+    background: currentColor;
+}
+.kpi-seg.kpi-rest { color: var(--text-muted); opacity: 0.25; }
+.kpi-meter + .stat-subtitle { margin-top: 6px; }
+
+/* Small text in the KPI cards. --ds-font-figure is only for the large figures
+   (.stat-value, donut percent); anything under about 16px uses the body font. */
+#dashboard-stats .stat-subtitle,
+.kpi-wl-label,
+.kpi-ratio {
+    font-family: var(--ds-font-body);
+    font-size: var(--ds-text-sm);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Total P&L: equity curve, line over an 18% fill to the zero line. */
+.kpi-spark-wrap { height: 40px; }
+.kpi-spark { display: block; width: 100%; height: 100%; overflow: visible; }
+.kpi-spark path { fill: none; vector-effect: non-scaling-stroke; }
+.kpi-spark-line { stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+.kpi-spark .kpi-spark-area { fill: currentColor; fill-opacity: 0.18; }
+.kpi-spark-zero { stroke: var(--border); stroke-width: 1; stroke-dasharray: 2 2; }
+
+/* Total P&L in cloud mode: gross won / lost, labelled bars, the larger full width. */
+.kpi-wonlost { display: flex; flex-direction: column; gap: 4px; }
+.kpi-wl-label { font-weight: var(--ds-weight-semibold); }
+.kpi-wl-bar {
+    position: relative;
+    height: 8px;
+    margin-top: 2px;
+    border-radius: 2px;
+    background: var(--border);
+    overflow: hidden;
+}
+.kpi-wl-bar > span {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: currentColor;
+}
+
+/* Win Rate: the donut shows the number; the .stat-value stays for screen readers. */
+.kpi-donut-row {
+    flex: 1 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 6px;
+}
+.kpi-donut-row > .stat-value {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+.kpi-donut { display: block; width: 72px; height: 72px; }
+.kpi-donut circle { fill: none; stroke-width: 4; }
+.kpi-donut-win   { stroke: var(--success); }
+.kpi-donut-rest  { stroke: var(--danger); stroke-opacity: 0.55; }
+.kpi-donut-track { stroke: var(--border); }
+.kpi-donut-text {
+    fill: var(--text-primary);
+    font-family: var(--ds-font-figure);
+    font-size: 12.3px;
+    font-weight: var(--ds-weight-bold);
+    text-anchor: middle;
+    dominant-baseline: central;
+}
+
+/* Profit Factor: semicircle gauge, the value centred underneath it. */
+.kpi-gauge { order: 1; margin-top: auto; padding-top: 6px; }
+.kpi-gauge svg { display: block; width: 100%; height: 58px; }
+#dashboard-stats > .stat-card:has(> .kpi-gauge) > .stat-value { order: 2; text-align: center; }
+.kpi-zone { fill: none; stroke-width: 7; }
+.kpi-zone-loss { stroke: var(--danger); }
+.kpi-zone-mid  { stroke: var(--warning); }
+.kpi-zone-win  { stroke: var(--success); }
+.kpi-gauge-needle { stroke: var(--text-primary); stroke-width: 2.5; stroke-linecap: round; }
+.kpi-gauge-pivot  { fill: var(--text-primary); }
+
+/* Avg Win / Avg Loss: balance bar from a centre marker, payoff ratio below. */
+.kpi-bal-track {
+    position: relative;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border);
+}
+.kpi-bal-win,
+.kpi-bal-loss { position: absolute; top: 0; bottom: 0; }
+.kpi-bal-win  { right: 50%; border-radius: 3px 0 0 3px; background: var(--success); }
+.kpi-bal-loss { left: 50%;  border-radius: 0 3px 3px 0; background: var(--danger); }
+.kpi-dim { opacity: 0.35; }
+.kpi-bal-mid {
+    position: absolute;
+    top: -3px;
+    bottom: -3px;
+    left: 50%;
+    width: 2px;
+    margin-left: -1px;
+    background: var(--text-primary);
+}
+.kpi-ratio {
+    margin-top: 6px;
+    color: var(--text-muted);
+}
+
+/* Narrow cards (about 1100px): smaller donut and gauge rather than hiding
+   them, and the small labels step down to 11px so they are not clipped. */
+@container (max-width: 110px) {
+    .kpi-donut { width: 52px; height: 52px; }
+    .kpi-gauge svg { height: 46px; }
+    #dashboard-stats .stat-subtitle,
+    .kpi-wl-label,
+    .kpi-ratio { font-size: var(--ds-text-xs); }
+}
+/* Nothing here animates; keep it that way if a theme adds transitions. */
+@media (prefers-reduced-motion: reduce) {
+    #dashboard-stats [class*="kpi-"] { transition: none; animation: none; }
+}
+
+/* ── Shared filter bar (every page that mounts snap-filter-bar) ── */
+.snap-filter-bar { border-radius: var(--ds-radius-md); }
+.snap-filter-label {
+    font-size: var(--ds-text-xs);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+}
+/* (0,2,0)+ so the [data-theme] input/select rules don't take over. */
+.snap-filter-bar .snap-sel,
+.snap-filter-bar .snap-sym-input,
+.snap-filter-bar input[type="date"] {
+    height: var(--ds-control-h);
+    padding: 0 10px;
+    font-size: 13px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-sm);
+    color: var(--text-primary);
+}
+.snap-filter-bar .snap-sel:hover,
+.snap-filter-bar .snap-sym-input:hover,
+.snap-filter-bar input[type="date"]:hover { border-color: var(--border-strong); }
+.snap-filter-bar .snap-sel:focus,
+.snap-filter-bar .snap-sym-input:focus,
+.snap-filter-bar input[type="date"]:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+}
+#dash-newtrade-btn { min-height: var(--ds-control-h); }
+#dash-fg-newtrade { margin-left: auto; }
+
+/* Fluid single row from 1100px. Each filter group starts at its floor width
+   (width: min-content over fixed-floor controls) and grows to a cap, so the
+   row wraps only if the floors themselves don't fit and no control is ever
+   squeezed into its neighbour. Labels stack above controls below 1880px. */
+@media (min-width: 1100px) {
+    .snap-filter-bar {
+        --fb-date-min: 100px;
+        --fb-sel-min:  68px;
+        --fb-sym-min:  52px;
+        --fb-sep-gap:  4px;
+        gap: 8px 6px;
+        padding: 8px 10px;
+        align-items: flex-end;
+    }
+    .snap-filter-bar > [id$="-fg-period"]     { --fg-min: var(--fb-sel-min);  --fg-max: 150px; }
+    .snap-filter-bar > [id$="-fg-daterange"]  { --fg-min: var(--fb-date-min); --fg-max: 310px; }
+    .snap-filter-bar > [id$="-fg-style"]      { --fg-min: var(--fb-sel-min);  --fg-max: 170px; }
+    .snap-filter-bar > [id$="-fg-asset-type"] { --fg-min: var(--fb-sel-min);  --fg-max: 140px; }
+    .snap-filter-bar > [id$="-fg-strategy"]   { --fg-min: var(--fb-sel-min);  --fg-max: 200px; }
+    .snap-filter-bar > [id$="-fg-symbol"]     { --fg-min: var(--fb-sym-min);  --fg-max: 130px; }
+    .snap-filter-bar > :is([id$="-fg-period"], [id$="-fg-daterange"], [id$="-fg-style"],
+                           [id$="-fg-asset-type"], [id$="-fg-strategy"], [id$="-fg-symbol"]) {
+        flex: 1 1 auto;
+        width: min-content;
+        max-width: var(--fg-max);
+        min-width: 0;
+        /* Stacked: label row over control row, one column per pair. */
+        display: grid;
+        grid-auto-flow: column;
+        grid-template-rows: auto auto;
+        grid-auto-columns: minmax(var(--fg-min), 1fr);
+        gap: 4px 6px;
+        align-items: end;
+    }
+    .snap-filter-bar > .snap-filter-group.snap-fg-sep { grid-template-columns: 1px; column-gap: var(--fb-sep-gap); }
+    .snap-filter-bar > .snap-filter-group.snap-fg-sep::before {
+        grid-row: 1 / -1;
+        align-self: stretch;
+        height: auto;
+        margin: 0;
+    }
+    .snap-filter-bar .snap-filter-label {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.2;
+    }
+    .snap-filter-bar .snap-sel,
+    .snap-filter-bar .snap-sym-input,
+    .snap-filter-bar input[type="date"] {
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 0;
+        padding: 0 6px;
+        font-size: 12px;
+    }
+    .snap-filter-bar .snap-sel {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    #dash-newtrade-btn { padding: 0 10px !important; }
+}
+@media (min-width: 1240px) {
+    .snap-filter-bar {
+        --fb-date-min: 110px;
+        --fb-sel-min:  88px;
+        --fb-sym-min:  72px;
+        --fb-sep-gap:  6px;
+        gap: 8px;
+        padding: 10px 12px;
+    }
+}
+@media (min-width: 1400px) {
+    .snap-filter-bar {
+        --fb-date-min: 120px;
+        --fb-sel-min:  100px;
+        --fb-sym-min:  80px;
+        --fb-sep-gap:  8px;
+        gap: 10px 12px;
+        padding: 12px 16px;
+    }
+    .snap-filter-bar .snap-sel,
+    .snap-filter-bar .snap-sym-input,
+    .snap-filter-bar input[type="date"] { padding: 0 10px; font-size: 13px; }
+    #dash-newtrade-btn { padding: 0 14px !important; }
+}
+/* Wide: labels beside their controls again, but only on bars whose trailing
+   actions are a single button. Bars with Edit Layout / + Add Widget / Reset
+   (Snapshot and the other widget pages) need that room for the buttons, so
+   they keep labels above controls and stay on one row at every width.
+   Container queries can't tell the bars apart: they all get the same width
+   at a given viewport, so the button count is the deciding factor. */
+@media (min-width: 1880px) {
+    .snap-filter-bar:not(:has(> .snap-layout-btns > :nth-child(3))) {
+        gap: 10px 16px;
+        padding: 12px 18px;
+        align-items: center;
+    }
+    .snap-filter-bar:not(:has(> .snap-layout-btns > :nth-child(3))) > [id$="-fg-period"]     { --fg-max: 210px; }
+    .snap-filter-bar:not(:has(> .snap-layout-btns > :nth-child(3))) > [id$="-fg-daterange"]  { --fg-max: 380px; }
+    .snap-filter-bar:not(:has(> .snap-layout-btns > :nth-child(3))) > [id$="-fg-style"]      { --fg-max: 230px; }
+    .snap-filter-bar:not(:has(> .snap-layout-btns > :nth-child(3))) > [id$="-fg-asset-type"] { --fg-max: 240px; }
+    .snap-filter-bar:not(:has(> .snap-layout-btns > :nth-child(3))) > [id$="-fg-strategy"]   { --fg-max: 280px; }
+    .snap-filter-bar:not(:has(> .snap-layout-btns > :nth-child(3))) > [id$="-fg-symbol"]     { --fg-max: 200px; }
+    .snap-filter-bar:not(:has(> .snap-layout-btns > :nth-child(3))) > :is([id$="-fg-period"], [id$="-fg-daterange"], [id$="-fg-style"],
+            [id$="-fg-asset-type"], [id$="-fg-strategy"], [id$="-fg-symbol"]) {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .snap-filter-bar:not(:has(> .snap-layout-btns > :nth-child(3))) > .snap-filter-group.snap-fg-sep::before {
+        align-self: center;
+        height: 22px;
+        margin-right: var(--fb-sep-gap);
+    }
+    .snap-filter-bar:not(:has(> .snap-layout-btns > :nth-child(3))) .snap-filter-label { flex: none; overflow: visible; }
+    .snap-filter-bar:not(:has(> .snap-layout-btns > :nth-child(3))) .snap-sel,
+    .snap-filter-bar:not(:has(> .snap-layout-btns > :nth-child(3))) .snap-sym-input,
+    .snap-filter-bar:not(:has(> .snap-layout-btns > :nth-child(3))) input[type="date"] { flex: 1 1 var(--fg-min); width: var(--fg-min); min-width: var(--fg-min); }
+}
+
+/* ── View tabs: underline ── */
+.dash-view-tab {
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: none;
+    padding: 8px 14px;
+    color: var(--text-secondary);
+}
+.dash-view-tab:hover:not(.active) {
+    color: var(--text-primary);
+    background: none;
+    border-bottom-color: var(--border-strong);
+}
+.dash-view-tab.active {
+    color: var(--text-primary);
+    background: none;
+    border-bottom-color: var(--tab-indicator);
+}
+.dash-view-tab:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+}
+
+/* ── Trade table ── */
+.dash-table thead { background: var(--table-head-bg); }
+.dash-table th {
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+}
+.dash-table td { height: var(--table-row-h); }
+
+/* Cells stay on one line; padding tightens with the viewport and the wrapper
+   (.dash-table-wrap / the inline overflow-x div) scrolls if still too wide.
+   Trade Reflection's cells carry inline padding, hence !important. */
+.dash-table th,
+.dash-table td,
+#jnl-view-list table th,
+#jnl-view-list table td { white-space: nowrap; }
+@media (min-width: 1100px) {
+    .dash-table th,
+    .dash-table td { padding-inline: clamp(6px, 0.65vw, 12px); }
+    #jnl-view-list table th,
+    #jnl-view-list table td { padding-inline: clamp(6px, 0.55vw, 10px) !important; }
+}
+
+/* Bulk bar and selected rows: inline blue from Denarii.js, so !important. */
+#recent-trades .dash-bulk-bar {
+    background: var(--accent-soft) !important;
+    border-color: color-mix(in srgb, var(--primary) 35%, transparent) !important;
+}
+#recent-trades .dash-table tbody tr:has(.dash-trade-check:checked) {
+    background: var(--accent-soft) !important;
+}
+
+/* ── Analytics controls row: inline checkbox control (Strategy "Hide No Strategy") ── */
+.trd-controls-row .trd-check-group { flex: none; }
+.trd-controls-row .trd-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    cursor: pointer;
+    margin: 0;
+}
+.trd-controls-row input.trd-check-input {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   NEW TRADE (#journal / #trade-form)
+   Sections are divider-separated bands inside the page card, with inset
+   panels (fills, rules, planned levels, metrics, editor) inside them.
+   #trade-form rules are (1,x,x), so they beat the [data-theme] field and
+   label rules in Denarii.css without !important. Every !important below
+   overrides an inline style written by Denarii.js or journal.js.
+   Trade Reflection's entry form uses the same markup and shares these
+   rules through :is(#trade-form, #journal-editor-form); its own extras
+   are under TRADE REFLECTION below.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Header (formerly inline) ── */
+.nt-card-subtitle {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+.nt-head-actions {
+    display: flex;
+    gap: var(--ds-space-2);
+    align-items: center;
+}
+
+/* ── Sections ── */
+:is(#trade-form, #journal-editor-form) .form-group { margin-bottom: var(--ds-space-4); }
+:is(#trade-form, #journal-editor-form) .nt-section,
+#nt-fills-section,
+#jnl-fills-section {
+    margin-top: var(--ds-space-6) !important;
+    padding-top: var(--ds-space-5);
+    border-top: 1px solid var(--border);
+}
+#nt-fills-section,
+#jnl-fills-section { margin-bottom: var(--ds-space-4) !important; }
+
+/* Section headers: display font, sentence case. The Execution Rows header
+   and its subtitle are built by _ntEnsureFillsSection. */
+:is(#trade-form, #journal-editor-form) .nt-section-title,
+#nt-fills-section > div:first-child label {
+    display: block;
+    margin: 0 0 var(--ds-space-3);
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-md);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: -0.005em;
+    text-transform: none;
+    color: var(--text-primary);
+}
+#nt-fills-section > div:first-child { margin-bottom: var(--ds-space-3) !important; }
+#nt-fills-section > div:first-child label + span {
+    display: block;
+    margin: 2px 0 0 !important;
+    font-size: var(--ds-text-sm) !important;
+}
+:is(#trade-form, #journal-editor-form) .nt-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ds-space-3);
+    margin-bottom: var(--ds-space-3);
+}
+:is(#trade-form, #journal-editor-form) .nt-panel-head .nt-section-title { margin: 0; }
+
+/* Inset panels */
+:is(#trade-form, #journal-editor-form) .tf-planning-group,
+:is(#trade-form, #journal-editor-form) .nt-metrics,
+:is(#trade-form, #journal-editor-form) .nt-rules-panel {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-lg);
+    padding: var(--ds-space-4) var(--ds-space-5);
+}
+:is(#trade-form, #journal-editor-form) .tf-planning-group .form-group { margin-bottom: 0; }
+:is(#trade-form, #journal-editor-form) .nt-rules-panel { margin-bottom: var(--ds-space-4); }
+:is(#trade-form, #journal-editor-form) .nt-rules-score {
+    font-size: var(--ds-text-base);
+    font-weight: var(--ds-weight-semibold);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Strategy card: tinted header (title, select, score) over the rules body.
+   loadStrategyRules toggles the body's inline display; the collapsed state
+   is keyed off that so the header rounds fully and the stale score (JS
+   doesn't clear it on deselect) hides with the body. */
+:is(#trade-form, #journal-editor-form) .nt-strategy-card {
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-lg);
+    margin-bottom: var(--ds-space-4);
+}
+:is(#trade-form, #journal-editor-form) .nt-strategy-head {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: var(--ds-space-2) var(--ds-space-4);
+    margin: 0;
+    padding: var(--ds-space-3) var(--ds-space-5);
+    background: var(--table-head-bg);
+    border-bottom: 1px solid var(--border);
+    border-radius: calc(var(--ds-radius-lg) - 1px) calc(var(--ds-radius-lg) - 1px) 0 0;
+}
+:is(#trade-form, #journal-editor-form) .nt-strategy-head .nt-section-title { margin: 0; }
+:is(#trade-form, #journal-editor-form) .nt-strategy-head :is(#setup-type, #jnl-setup-type) {
+    flex: 0 1 360px;
+    min-width: 240px;
+    max-width: 420px;
+}
+:is(#trade-form, #journal-editor-form) .nt-strategy-head .nt-rules-score {
+    margin-left: auto;
+    text-align: right;
+}
+:is(#trade-form, #journal-editor-form) .nt-strategy-card > .nt-rules-panel {
+    margin: 0;
+    border: 0;
+    border-radius: 0 0 var(--ds-radius-lg) var(--ds-radius-lg);
+}
+:is(#trade-form, #journal-editor-form) .nt-strategy-card:has(> .nt-rules-panel[style*="none"]) .nt-strategy-head {
+    border-bottom: 0;
+    border-radius: calc(var(--ds-radius-lg) - 1px);
+}
+:is(#trade-form, #journal-editor-form) .nt-strategy-card:has(> .nt-rules-panel[style*="none"]) .nt-rules-score { display: none; }
+@media (max-width: 900px) {
+    :is(#trade-form, #journal-editor-form) .nt-strategy-head :is(#setup-type, #jnl-setup-type) { flex-basis: 100%; max-width: none; order: 1; }
+}
+
+/* ── Field labels: same muted uppercase as the filter bar ── */
+:is(#trade-form, #journal-editor-form) .form-group > label:not(.nt-section-title) {
+    margin-bottom: 6px;
+    font-size: var(--ds-text-xs);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Fields ── */
+/* :where keeps this at (1,0,1) so the fill-row and plan-row sizes below win;
+   the notes editor toolbar keeps its own compact controls. */
+:is(#trade-form, #journal-editor-form) input:where(:not([type="checkbox"], [type="radio"], [type="hidden"], [type="color"], [type="file"], [type="range"], .jnl-editor-wrap *)),
+:is(#trade-form, #journal-editor-form) select:where(:not(.jnl-tb-select, .jnl-editor-wrap *)) {
+    height: var(--field-h);
+    padding: 0 12px;
+    border-radius: var(--field-radius);
+    font-size: var(--ds-text-base);
+}
+:is(#trade-form, #journal-editor-form) textarea {
+    padding: 10px 12px;
+    border-radius: var(--field-radius);
+    line-height: var(--ds-leading-normal);
+}
+
+/* Field grid: 4 columns, 2 below 1280px (date-time fields need ~190px),
+   1 at 900px and below (Denarii.css). */
+:is(#trade-form, #journal-editor-form) .form-grid {
+    gap: var(--ds-space-4);
+    margin-bottom: var(--ds-space-4);
+}
+:is(#trade-form, #journal-editor-form) .form-grid > .form-group { min-width: 0; margin-bottom: 0; }
+@media (min-width: 1280px) {
+    :is(#trade-form, #journal-editor-form) .tf-4col-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+}
+@media (min-width: 900.02px) and (max-width: 1279.98px) {
+    :is(#trade-form, #journal-editor-form) .tf-4col-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+
+/* ── Execution fills table (markup from _ntEnsureFillsSection / ntAddFillRow) ── */
+#nt-fills-body {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--ds-radius-md) !important;
+    padding: 0 !important;
+    overflow-x: auto;
+}
+/* The flexible price/time columns would collapse to nothing on narrow
+   screens; the table scrolls inside its frame instead. */
+#nt-fills-body .nt-fills-header,
+#nt-fills-rows,
+#nt-fills-total { min-width: 860px; }
+#nt-fills-body .nt-fills-header {
+    margin-bottom: 0 !important;
+    padding: 8px 12px;
+    background: var(--table-head-bg);
+    border-bottom: 1px solid var(--border);
+    font-weight: var(--ds-weight-semibold);
+}
+#nt-fills-rows .nt-fill-row {
+    margin-bottom: 0 !important;
+    min-height: var(--table-row-h);
+    padding: 4px 12px;
+    border-bottom: 1px solid var(--border);
+}
+#nt-fills-rows .nt-fill-row:last-child { border-bottom: 0; }
+#nt-fills-total {
+    padding: 8px 12px !important;
+    background: var(--surface-hover);
+}
+#nt-fills-error { margin: 6px 12px 0 !important; }
+#nt-fills-body > div:last-child {
+    margin-top: 0 !important;
+    padding: 8px 12px;
+    border-top: 1px solid var(--border);
+}
+#nt-fills-rows .nt-fill-row input {
+    height: var(--ds-control-h);
+    padding: 0 8px;
+    font-size: 13px;
+}
+/* Numbers right-aligned: Qty, Entry, Exit, Fees (the calculated columns
+   are already right-aligned inline). */
+#nt-fills-body .nt-fills-header > span:is(:nth-child(2), :nth-child(4), :nth-child(5), :nth-child(8)),
+#nt-fills-rows [data-nt-fill="qty"],
+#nt-fills-rows [data-nt-fill="entry-price"],
+#nt-fills-rows [data-nt-fill="exit-price"],
+#nt-fills-rows [data-nt-fill="fees"],
+#nt-fills-total :is([data-nt-tot="qty"], [data-nt-tot="entry"], [data-nt-tot="exit"], [data-nt-tot="fees"]) { text-align: right; }
+#nt-fills-body input,
+#nt-fills-body [data-nt-calc],
+#nt-fills-body [data-nt-tot],
+#nt-fills-body .nt-fill-idx { font-variant-numeric: tabular-nums; }
+
+/* ── Add (+) buttons: secondary, not primary ── */
+:is(#trade-form, #journal-editor-form) .nt-add-btn,
+#nt-fills-body .btn-primary,
+#jnl-fills-section .btn-primary,
+#jnl-fills-split-btn {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    box-shadow: none;
+    transform: none;
+}
+:is(#trade-form, #journal-editor-form) .nt-add-btn:hover,
+#nt-fills-body .btn-primary:hover,
+#jnl-fills-section .btn-primary:hover:not(:disabled),
+#jnl-fills-split-btn:hover:not(:disabled) {
+    background: var(--surface-active);
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+    box-shadow: none;
+    transform: none;
+}
+:is(#trade-form, #journal-editor-form) .nt-add-btn {
+    min-width: var(--ds-control-h-sm);
+    height: var(--ds-control-h-sm);
+    padding: 0 8px;
+    font-size: 15px;
+    line-height: 1;
+}
+#nt-fills-body .btn-primary,
+#jnl-fills-section .btn-small {
+    height: var(--ds-control-h-sm);
+    padding: 0 12px !important;
+    font-size: var(--ds-text-sm) !important;
+}
+
+/* ── Remove (×) buttons: ghost danger. Visibility stays with Denarii.js. ── */
+:is(#trade-form, #journal-editor-form) .plan-remove-btn,
+#nt-fills-rows .nt-fill-row .btn,
+#jnl-fills-rows .jnl-fill-row .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--ds-control-h-sm);
+    height: var(--ds-control-h-sm);
+    padding: 0 !important;
+    background: transparent !important;
+    color: var(--danger-text) !important;
+    border: 1px solid var(--border);
+    box-shadow: none;
+    font-size: 14px !important;
+    line-height: 1 !important;
+}
+:is(#trade-form, #journal-editor-form) .plan-remove-btn:hover,
+#nt-fills-rows .nt-fill-row .btn:hover,
+#jnl-fills-rows .jnl-fill-row .btn:hover:not(:disabled) {
+    background: var(--danger-soft) !important;
+    border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+    transform: none;
+}
+
+/* ── Planned levels + Calculated Metrics ── */
+:is(#trade-form, #journal-editor-form) .jnl-planning-metrics-row {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: var(--ds-space-4);
+    align-items: stretch;
+    margin-bottom: var(--ds-space-4);
+}
+@media (max-width: 1399.98px) {
+    :is(#trade-form, #journal-editor-form) .jnl-planning-metrics-row { grid-template-columns: minmax(0, 1fr); }
+}
+:is(#plan-rows, #jnl-plan-rows) .plan-row input {
+    height: var(--ds-control-h);
+    padding: 0 10px;
+}
+:is(#plan-rows, #jnl-plan-rows) .plan-rr { font-variant-numeric: tabular-nums; }
+
+/* Label/value stat list: planned figures down the left, realized down the right. */
+:is(#trade-form, #journal-editor-form) .nt-metrics-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(5, auto);
+    grid-auto-flow: column;
+    column-gap: var(--ds-space-6);
+}
+:is(#trade-form, #journal-editor-form) .nt-metric {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--ds-space-3);
+    min-width: 0;
+    padding: 7px 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+#trade-form .nt-metric:nth-child(5),
+:is(#trade-form, #journal-editor-form) .nt-metric:last-child { border-bottom: 0; }
+:is(#trade-form, #journal-editor-form) .nt-metric-label {
+    min-width: 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* Color stays here; Denarii.js sets it inline for the signed values. */
+:is(#trade-form, #journal-editor-form) .nt-metric-value {
+    font-family: var(--ds-font-figure);
+    font-size: var(--ds-text-md);
+    font-weight: var(--ds-weight-bold);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    white-space: nowrap;
+    text-align: right;
+}
+@media (max-width: 600px) {
+    :is(#trade-form, #journal-editor-form) .nt-metrics-list {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: none;
+        grid-auto-flow: row;
+    }
+    #trade-form .nt-metric:nth-child(5) { border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+}
+
+/* ── Grade pills (markup and selected colors from _ntSetGrade) ── */
+:is(#trade-form, #journal-editor-form) .nt-grade-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ds-space-2);
+}
+:is(#nt-grade-pills, #jnl-grade-pills) .jnl-grade-pill {
+    min-width: 48px;
+    height: var(--ds-control-h);
+    padding: 0 16px !important;
+    border-radius: var(--ds-radius-pill) !important;
+    font-size: 13px !important;
+    font-variant-numeric: tabular-nums;
+}
+:is(#nt-grade-pills, #jnl-grade-pills) .jnl-grade-pill:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+/* _ntSetGrade marks the selection only through inline styles (fontWeight
+   700 plus a fixed hex fill); the theme's grade-badge colors replace that. */
+:is(#nt-grade-pills, #jnl-grade-pills) .jnl-grade-pill:not([style*="font-weight: 700"], [style*="font-weight:700"]):hover {
+    background: var(--surface-hover) !important;
+    border-color: var(--border-strong) !important;
+    color: var(--text-primary) !important;
+}
+:is(#nt-grade-pills, #jnl-grade-pills) .jnl-grade-pill:is([style*="font-weight: 700"], [style*="font-weight:700"]) {
+    --grade-hue: var(--success);
+    --grade-mix: 24%;
+    background: color-mix(in srgb, var(--grade-hue) var(--grade-mix), transparent) !important;
+    border-color: var(--grade-hue) !important;
+    color: color-mix(in srgb, var(--grade-hue) 60%, var(--text-primary)) !important;
+}
+:is(#nt-grade-pills, #jnl-grade-pills) .jnl-grade-pill[data-grade="A"] { --grade-mix: 12%; }
+:is(#nt-grade-pills, #jnl-grade-pills) .jnl-grade-pill[data-grade="B"] { --grade-hue: var(--warning); --grade-mix: 12%; }
+:is(#nt-grade-pills, #jnl-grade-pills) .jnl-grade-pill[data-grade="C"] { --grade-hue: var(--warning); }
+:is(#nt-grade-pills, #jnl-grade-pills) .jnl-grade-pill[data-grade="D"] { --grade-hue: var(--danger); --grade-mix: 12%; }
+:is(#nt-grade-pills, #jnl-grade-pills) .jnl-grade-pill[data-grade="F"] { --grade-hue: var(--danger); }
+
+/* ── Tags ── */
+:is(#nt-tag-rows, #jnl-tag-rows) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ds-space-2) var(--ds-space-4);
+}
+@media (max-width: 1279.98px) {
+    :is(#nt-tag-rows, #jnl-tag-rows) { grid-template-columns: minmax(0, 1fr); }
+}
+:is(#nt-tag-rows, #jnl-tag-rows) .jnl-tag-row { gap: var(--ds-space-2); }
+
+/* ── Notes and reflection ── */
+:is(#trade-form, #journal-editor-form) .nt-reflection-sep { margin-top: var(--ds-space-5); }
+:is(#trade-form, #journal-editor-form) .nt-reflection-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ds-space-3);
+    margin-bottom: var(--ds-space-3);
+    flex-wrap: wrap;
+}
+:is(#trade-form, #journal-editor-form) .nt-reflection-head .nt-section-title { margin: 0; }
+:is(#trade-form, #journal-editor-form) .nt-reflection-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+.nt-cleanup-msg {
+    font-size: var(--ds-text-sm);
+    color: var(--text-secondary);
+}
+.nt-nowrap { white-space: nowrap; }
+/* Toolbar-sized selects, level with the small buttons beside them. */
+:is(#trade-form, #journal-editor-form) .nt-toolbar-select {
+    height: var(--ds-control-h);
+    padding: 0 8px;
+    border-radius: var(--field-radius);
+    font-size: 13px;
+}
+:is(#trade-form, #journal-editor-form) .nt-template-select {
+    width: 175px;
+    max-width: 175px;
+}
+:is(#nt-editor-wrap, #jnl-editor-wrap):not(.jnl-fullscreen) {
+    border-radius: var(--ds-radius-md);
+    background: var(--field-bg);
+    transition: border-color var(--ds-dur-fast) var(--ds-ease), box-shadow var(--ds-dur-fast) var(--ds-ease);
+}
+:is(#nt-editor-wrap, #jnl-editor-wrap):not(.jnl-fullscreen):focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+/* ── Save: theme primary button ── */
+/* The button keeps .btn-success; .btn-primary wins on load order, except in
+   Forged and Blush, whose .btn-success gradients sit after their
+   .btn-primary ones in Denarii.css. :not(:hover) leaves their primary
+   hover gradients in charge. */
+:is(#trade-form, #journal-editor-form) .nt-save-btn {
+    margin-top: var(--ds-space-6);
+    min-width: 140px;
+}
+[data-theme="denarii-forged"] .btn-success.btn-primary:not(:hover) {
+    background: linear-gradient(135deg, #FF6A00 0%, #E67E22 55%, #C76D1A 100%);
+    color: var(--on-primary);
+}
+[data-theme="blush-power"] .btn-success.btn-primary:not(:hover) {
+    background: linear-gradient(135deg, #AE1375, #B25199);
+    color: var(--on-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TRADE REFLECTION (#trade-journal)
+   The entry form shares the NEW TRADE rules above. These cover what only
+   this page has: the trade list, the 13-row metrics list, and the fills
+   panel built by journal.js. Every !important overrides an inline style
+   written by journal.js.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── List view (formerly inline). Same look as .dash-table. ── */
+.jnl-list-card { margin-bottom: 18px; }
+.jnl-list-wrap { overflow-x: auto; }
+.jnl-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.jnl-list-table thead { background: var(--table-head-bg); }
+.jnl-list-table thead tr { border-bottom: 1px solid var(--border); }
+/* renderJournalTradeList rewrites the header cells with these values inline;
+   letter-spacing follows .dash-table. */
+.jnl-list-th {
+    padding: 8px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    text-align: left;
+}
+.jnl-list-table th { letter-spacing: 0.06em !important; }
+#journal-trade-list-body tr[data-id] td {
+    height: var(--table-row-h);
+    padding-block: 4px !important;
+    vertical-align: middle;
+}
+/* Paints over the row's inline hover tint, which is white-only. */
+#journal-trade-list-body tr[data-id]:hover td { background: var(--surface-hover); }
+#journal-trade-list-body .btn-small {
+    height: var(--ds-control-h-sm);
+    padding: 0 12px;
+    font-size: var(--ds-text-sm);
+}
+/* Reflected check beside the symbol: success soft badge. */
+#journal-trade-list-body tr[data-id] td:nth-child(2) > span {
+    display: inline-block;
+    margin-left: 6px !important;
+    padding: 1px 6px !important;
+    border-radius: var(--ds-radius-sm) !important;
+    background: var(--success-soft) !important;
+    color: var(--success-text) !important;
+    font-weight: var(--ds-weight-bold);
+    line-height: 1.4;
+}
+
+/* ── Entry header and footer (formerly inline) ── */
+.jnl-editor-subtitle {
+    margin-top: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.jnl-open-hint {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--danger);
+}
+
+/* ── Calculated Metrics: 13 values, seven rows per column ── */
+#journal-editor-form .nt-metrics-list { grid-template-rows: repeat(7, auto); }
+#journal-editor-form .nt-metric:nth-child(7) { border-bottom: 0; }
+.jnl-fee-badge {
+    margin-left: 4px;
+    padding: 1px 5px;
+    border-radius: var(--ds-radius-sm);
+    font-size: 10px;
+    background: var(--surface-active);
+    color: var(--text-secondary);
+}
+@media (max-width: 600px) {
+    #journal-editor-form .nt-metrics-list { grid-template-rows: none; }
+    #journal-editor-form .nt-metric:nth-child(7) { border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+}
+
+/* ── Fills (markup from _jnlRenderFillsSection / _jnlRenderFillsEditor) ──
+   The section is a divider band like #nt-fills-section (rules above). The
+   <details> loses its tinted box; the table inside gets the fills frame. */
+#jnl-fills-section .jnl-fills-details,
+#jnl-fills-section > div {
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+}
+/* Section title; the "(n rows)" / "(single fill)" note stays muted. */
+#jnl-fills-section .jnl-fills-details > summary,
+#jnl-fills-section > div > span:first-child {
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-md) !important;
+    font-weight: var(--ds-weight-semibold) !important;
+    letter-spacing: -0.005em;
+    color: var(--text-primary);
+}
+#jnl-fills-section .jnl-fills-details > summary > span:last-child,
+#jnl-fills-section > div > span:first-child > span {
+    font-family: var(--ds-font-body);
+    font-size: var(--ds-text-sm);
+    letter-spacing: 0;
+}
+#jnl-fills-section .jnl-fills-details > div {
+    margin-top: var(--ds-space-3) !important;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-md);
+}
+
+/* Read-only table (Webull and other locked fills) */
+#jnl-fills-section .jnl-fills-table { font-size: 13px !important; }
+#jnl-fills-section .jnl-fills-table thead tr { background: var(--table-head-bg); }
+#jnl-fills-section .jnl-fills-table th {
+    padding: 8px 12px !important;
+    font-size: var(--ds-text-xs);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+#jnl-fills-section .jnl-fills-table td {
+    height: var(--table-row-h);
+    padding: 0 12px !important;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+}
+#jnl-fills-section .jnl-fills-table :is(th, td):first-child { padding-inline: 8px !important; }
+#jnl-fills-section .jnl-fills-table .jnl-fills-total td {
+    background: var(--surface-hover);
+    border-bottom: 0;
+}
+
+/* Editable rows: same frame as the New Trade fills grid. */
+#jnl-fills-section .jnl-fills-details > div > div:first-child,
+#jnl-fills-rows,
+#jnl-fills-total { min-width: 900px; }
+#jnl-fills-section .jnl-fills-details > div > div:first-child {
+    margin-bottom: 0 !important;
+    padding: 8px 12px;
+    background: var(--table-head-bg);
+    border-bottom: 1px solid var(--border);
+    font-weight: var(--ds-weight-semibold);
+}
+#jnl-fills-rows .jnl-fill-row {
+    margin-bottom: 0 !important;
+    min-height: var(--table-row-h);
+    padding: 4px 12px;
+    border-bottom: 1px solid var(--border);
+}
+#jnl-fills-rows .jnl-fill-row:last-child { border-bottom: 0; }
+#jnl-fills-total {
+    padding: 8px 12px !important;
+    background: var(--surface-hover);
+}
+#jnl-fills-error { margin: 6px 12px 0 !important; }
+#jnl-fills-total ~ div:not([id]) {
+    margin-top: 0 !important;
+    padding: 8px 12px;
+    border-top: 1px solid var(--border);
+}
+#jnl-fills-split-bar {
+    margin: 0 12px 12px !important;
+    background: var(--warning-soft) !important;
+    border-color: color-mix(in srgb, var(--warning) 45%, transparent) !important;
+    border-radius: var(--ds-radius-md) !important;
+}
+#jnl-fills-rows .jnl-fill-row input:not([type="checkbox"]) {
+    height: var(--ds-control-h);
+    padding: 0 8px;
+    font-size: 13px;
+}
+#jnl-fills-rows .jnl-fill-row input[type="checkbox"] { accent-color: var(--primary); }
+/* Numbers right-aligned: Qty, Entry, Exit, Fees (the calculated columns
+   are already right-aligned inline). */
+#jnl-fills-section .jnl-fills-details > div > div:first-child > span:is(:nth-child(2), :nth-child(4), :nth-child(5), :nth-child(8)),
+#jnl-fills-rows :is([data-jnl-fill="qty"], [data-jnl-fill="entry-price"], [data-jnl-fill="exit-price"], [data-jnl-fill="fees"]),
+#jnl-fills-total :is([data-jnl-tot="qty"], [data-jnl-tot="entry"], [data-jnl-tot="exit"], [data-jnl-tot="fees"]) { text-align: right; }
+#jnl-fills-section input,
+#jnl-fills-section [data-jnl-fill],
+#jnl-fills-section [data-jnl-tot],
+#jnl-fills-section .jnl-fill-idx { font-variant-numeric: tabular-nums; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   BROKER IMPORT MODAL
+   Step indicator as a segmented track: completed steps tinted, the
+   current step (last .active, set by updateBrokerImportStepPills) filled.
+   ═══════════════════════════════════════════════════════════════════ */
+.import-stepper {
+    width: fit-content;
+    max-width: 100%;
+    gap: 2px;
+    padding: 3px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-pill);
+}
+.import-step-pill {
+    padding: 6px 14px;
+    border: 1px solid transparent;
+    border-radius: var(--ds-radius-pill);
+    background: transparent;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    transition: background var(--ds-dur-fast) var(--ds-ease), color var(--ds-dur-fast) var(--ds-ease);
+}
+.import-step-pill.active {
+    background: var(--accent-soft);
+    color: var(--text-primary);
+    border-color: transparent;
+}
+.import-step-pill.active:not(:has(+ .active)) {
+    background: var(--primary);
+    color: var(--on-primary);
+}
+#broker-import-modal .import-section { border-radius: var(--ds-radius-lg); }
+#broker-import-modal .import-mode-option { border-radius: var(--ds-radius-md); }
+#broker-import-modal .import-mode-option:has(input:checked) {
+    border-color: var(--primary);
+    background: var(--accent-soft);
+}
+#broker-import-modal .import-mode-option input { accent-color: var(--primary); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   DAILY + WEEKLY PLANNER (#daily-planner / #weekly-planner)
+   Markup from daily-planner.js / weekly-planner.js; both pages share it.
+   Layout: date bar, then context rail (fields + AI card) | editor |
+   Behavioral Focus. From 1500px .wp-body becomes display: contents so
+   its two columns and the .wp-behavioral sibling share one grid row,
+   in DOM order. Below that, the original two columns with Behavioral
+   Focus full width underneath; one column at 900px and below.
+   The AI card (.planner-ai-card) keeps its own rules.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Date navigation ── */
+:is(#daily-planner, #weekly-planner) .wp-nav-bar {
+    gap: var(--ds-space-2);
+    margin-bottom: var(--ds-space-4);
+    padding: var(--ds-space-2) var(--ds-space-3);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--ds-radius-md);
+    box-shadow: var(--card-edge), var(--shadow-sm);
+}
+:is(#daily-planner, #weekly-planner) .wp-nav-bar .btn {
+    height: var(--ds-control-h);
+    min-width: var(--ds-control-h);
+    padding: 0 12px;
+    box-shadow: none;
+}
+:is(#daily-planner, #weekly-planner) .wp-period-label {
+    min-width: 0;
+    padding: 0 var(--ds-space-2);
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-lg);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+}
+/* .wp-week-input sets padding and size with !important in Denarii.css. */
+:is(#daily-planner, #weekly-planner) .wp-week-input {
+    height: var(--ds-control-h);
+    padding: 0 10px !important;
+    border-radius: var(--field-radius);
+}
+:is(#daily-planner, #weekly-planner) .wp-save-status {
+    font-size: var(--ds-text-sm);
+    color: var(--success-text);
+}
+
+/* ── Cards: context rail, editor, Behavioral Focus ── */
+:is(#daily-planner, #weekly-planner) :is(.wp-sidebar, .wp-editor-card, .wp-behavioral) {
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-edge), var(--shadow-sm);
+}
+:is(#daily-planner, #weekly-planner) .wp-body {
+    grid-template-columns: 260px minmax(0, 1fr);
+    gap: var(--ds-space-4);
+    margin-bottom: var(--ds-space-4);
+}
+:is(#daily-planner, #weekly-planner) .wp-sidebar {
+    gap: 0;
+    padding: var(--ds-space-5);
+}
+:is(#daily-planner, #weekly-planner) .wp-behavioral { padding: var(--ds-space-5); }
+
+/* Card titles: display font, sentence case, like New Trade sections. */
+:is(#daily-planner, #weekly-planner) :is(.wp-editor-header, .wp-behavioral) > .card-title {
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-md);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: -0.005em;
+    color: var(--text-primary);
+}
+
+/* ── Context fields: New Trade labels and field sizes ── */
+:is(#daily-planner, #weekly-planner) .wp-field { margin-bottom: var(--ds-space-4); }
+:is(#daily-planner, #weekly-planner) .wp-field label {
+    margin-bottom: 6px;
+    font-size: var(--ds-text-xs);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+}
+:is(#daily-planner, #weekly-planner) .wp-field :is(input, select) {
+    height: var(--field-h);
+    padding: 0 12px;
+    border-radius: var(--field-radius);
+    font-size: 13px;
+}
+:is(#daily-planner, #weekly-planner) .wp-field textarea {
+    padding: 8px 12px;
+    border-radius: var(--field-radius);
+    font-size: 13px;
+    line-height: var(--ds-leading-normal);
+}
+:is(#daily-planner, #weekly-planner) .wp-sidebar > .planner-ai-card { margin-top: var(--ds-space-1); }
+
+/* ── Editor: header, then toolbar + writing area as one inset frame ── */
+:is(#daily-planner, #weekly-planner) .wp-editor-header {
+    gap: var(--ds-space-2) !important;
+    padding: var(--ds-space-4) var(--ds-space-5) var(--ds-space-3);
+}
+/* Clean-up format select and button: secondary, toolbar height.
+   The select's padding is inline in the template. */
+:is(#daily-planner, #weekly-planner) .wp-editor-header :is(select, .btn) {
+    height: var(--ds-control-h);
+    box-shadow: none;
+}
+:is(#daily-planner, #weekly-planner) .wp-editor-header select { padding: 0 8px !important; }
+:is(#daily-planner, #weekly-planner) .wp-editor-header .btn:not(select) { padding: 0 14px; }
+:is(#dp-cleanup-msg, #wp-cleanup-msg) { min-width: 0; }
+
+:is(#daily-planner, #weekly-planner) .wp-editor-card .rv-toolbar {
+    margin: 0 var(--ds-space-5);
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-md) var(--ds-radius-md) 0 0;
+}
+:is(#daily-planner, #weekly-planner) .wp-editor-card .rv-editor {
+    min-height: max(420px, calc(100vh - 420px));
+    margin: 0 var(--ds-space-5) var(--ds-space-5);
+    padding: var(--ds-space-4) var(--ds-space-5);
+    background: var(--field-bg);
+    border: 1px solid var(--border);
+    border-top: 0;
+    border-radius: 0 0 var(--ds-radius-md) var(--ds-radius-md);
+    font-size: var(--ds-text-md);
+    transition: border-color var(--ds-dur-fast) var(--ds-ease);
+}
+:is(#daily-planner, #weekly-planner) .wp-editor-card .rv-editor:empty::before { color: var(--text-muted); }
+:is(#daily-planner, #weekly-planner) .wp-editor-card:has(.rv-editor:focus) :is(.rv-toolbar, .rv-editor) {
+    border-color: var(--primary);
+}
+
+/* ── Continue / Stop / Focus (planners and reflection pages) ── */
+:is(#daily-planner, #weekly-planner, .rv-workspace) .rv-nf-grid { gap: var(--ds-space-3); }
+:is(#daily-planner, #weekly-planner, .rv-workspace) .rv-nf-col {
+    --nf-hue: var(--primary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-md);
+}
+:is(#daily-planner, #weekly-planner, .rv-workspace) .rv-nf-continue { --nf-hue: var(--success); }
+:is(#daily-planner, #weekly-planner, .rv-workspace) .rv-nf-stop     { --nf-hue: var(--danger); }
+:is(#daily-planner, #weekly-planner, .rv-workspace) .rv-nf-col-hdr {
+    padding: var(--ds-space-2) var(--ds-space-2) var(--ds-space-2) var(--ds-space-3);
+    background: color-mix(in srgb, var(--nf-hue) 10%, transparent);
+    border-bottom: 1px solid var(--border);
+}
+:is(#daily-planner, #weekly-planner, .rv-workspace) .rv-nf-col-label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+    font-family: var(--ds-font-body);
+    font-size: 13px;
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--text-primary);
+}
+:is(#daily-planner, #weekly-planner, .rv-workspace) .rv-nf-col-label::before {
+    content: "";
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--nf-hue);
+}
+/* Add (+): small secondary button, like New Trade's .nt-add-btn. */
+:is(#daily-planner, #weekly-planner, .rv-workspace) .rv-nf-add {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--ds-control-h-sm);
+    height: var(--ds-control-h-sm);
+    padding: 0 8px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-sm);
+    font-size: 15px;
+}
+:is(#daily-planner, #weekly-planner, .rv-workspace) .rv-nf-add:hover {
+    background: var(--surface-active);
+    border-color: var(--border-strong);
+}
+:is(#daily-planner, #weekly-planner, .rv-workspace) .rv-nf-add:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+:is(#daily-planner, #weekly-planner, .rv-workspace) .rv-nf-items {
+    gap: 6px;
+    padding: var(--ds-space-2);
+}
+:is(#daily-planner, #weekly-planner, .rv-workspace) .rv-nf-item {
+    gap: var(--ds-space-2);
+    padding: 6px var(--ds-space-2);
+    background: var(--bg-card);
+    border-radius: var(--ds-radius-sm);
+}
+:is(#daily-planner, #weekly-planner, .rv-workspace) .rv-nf-label {
+    font-size: 13px;
+    line-height: var(--ds-leading-normal);
+}
+
+/* ── Three columns from 1500px ── */
+@media (min-width: 1500px) {
+    :is(#daily-planner, #weekly-planner).active {
+        display: grid;
+        grid-template-columns: minmax(240px, 280px) minmax(0, 1fr) minmax(260px, 300px);
+        column-gap: var(--ds-space-4);
+        align-items: start;
+    }
+    :is(#daily-planner, #weekly-planner) .wp-nav-bar { grid-column: 1 / -1; }
+    :is(#daily-planner, #weekly-planner) .wp-body { display: contents; }
+    /* The editor runs the full height of the row. */
+    :is(#daily-planner, #weekly-planner) .wp-main {
+        align-self: stretch;
+        display: flex;
+        flex-direction: column;
+    }
+    :is(#daily-planner, #weekly-planner) .wp-editor-card { flex: 1; }
+    :is(#daily-planner, #weekly-planner) .rv-nf-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 900px) {
+    :is(#daily-planner, #weekly-planner) .wp-body { grid-template-columns: minmax(0, 1fr); }
+    :is(#daily-planner, #weekly-planner) .wp-editor-card .rv-editor { min-height: 300px; }
+}
+@media (max-width: 600px) {
+    :is(#daily-planner, #weekly-planner) .wp-editor-card .rv-toolbar { margin: 0 var(--ds-space-3); }
+    :is(#daily-planner, #weekly-planner) .wp-editor-card .rv-editor { margin: 0 var(--ds-space-3) var(--ds-space-3); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DAILY · WEEKLY · MONTHLY · YEARLY REFLECTION (.rv-workspace)
+   Markup from reviews.js, rendered into #daily-review … #yearly-review.
+   Same look as the planners: the workspace is no longer one big card;
+   the header sits on the page, the period bar is a card bar, and each
+   section is its own card. Layout: rail (Snapshot, Pattern Highlights,
+   AI Analysis) | Reflection + Next-Focus. From 1500px .rv-main becomes
+   display: contents so Next-Focus takes a third column, in DOM order.
+   One column at 1000px and below (Denarii.css).
+   Pattern Highlights (.rv-rail-section, .review-pattern*) and the AI
+   Analysis panel (.rv-ai-panel*) keep their own rules.
+   Continue / Stop / Focus share the planner rules above.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.rv-workspace,
+.rv-complete.rv-workspace {
+    background: none;
+    border: 0;
+    border-radius: 0;
+}
+
+/* ── Header: title on the page, actions at control height ── */
+.rv-workspace .rv-workspace-header {
+    padding: 0 0 var(--ds-space-4);
+    border-bottom: 0;
+}
+/* The topbar already shows the page title and subtitle: hide the repeat
+   (kept for screen readers) and keep the actions on the right. */
+.rv-workspace .rv-workspace-header-left,
+#ai-library .card-header .card-title,
+#ai-library .card-header .card-subtitle {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+.rv-workspace .rv-workspace-header-right { margin-left: auto; }
+.rv-workspace .rv-workspace-title {
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-xl);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: -0.01em;
+}
+.rv-workspace .rv-workspace-subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+.rv-workspace .rv-save-status { font-size: var(--ds-text-sm); }
+.rv-workspace .rv-save-status.rv-saved { color: var(--success-text); }
+.rv-workspace :is(.rv-workspace-header-right, .rv-period-bar, .review-section-hdr) .btn { height: var(--ds-control-h); }
+.rv-workspace :is(.rv-workspace-header-right, .rv-period-bar, .review-section-hdr) .btn-secondary { box-shadow: none; }
+.rv-workspace :is(.rv-workspace-header-right, .rv-period-bar, .review-section-hdr) .btn:not(select) {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 14px;
+}
+
+/* ── Period navigation: the planner's card bar ── */
+.rv-workspace .rv-period-bar {
+    gap: var(--ds-space-2);
+    margin-bottom: var(--ds-space-4);
+    padding: var(--ds-space-2) var(--ds-space-3);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--ds-radius-md);
+    box-shadow: var(--card-edge), var(--shadow-sm);
+}
+.rv-complete .rv-period-bar {
+    border-color: color-mix(in srgb, var(--success) 40%, var(--card-border));
+}
+.rv-workspace .rv-period-bar .review-period-nav { gap: var(--ds-space-2); }
+.rv-workspace .rv-period-bar .review-nav-btn {
+    min-width: var(--ds-control-h);
+    justify-content: center;
+    padding: 0 12px;
+}
+.rv-workspace .rv-period-wrap {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--ds-space-2);
+}
+.rv-workspace .review-period-label {
+    min-width: 0;
+    padding: 0 var(--ds-space-2);
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-lg);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: -0.01em;
+}
+.rv-workspace .rv-datepicker {
+    height: var(--ds-control-h);
+    max-width: 180px;
+    padding: 0 10px;
+    background: var(--field-bg);
+    border-radius: var(--field-radius);
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+/* ── Body: rail and main column hold separate cards ── */
+.rv-workspace .rv-body {
+    gap: var(--ds-space-4);
+    min-height: 0;
+}
+.rv-workspace :is(.rv-rail, .rv-main) {
+    gap: var(--ds-space-4);
+    padding: 0;
+    border: 0;
+    overflow: visible;
+}
+.rv-workspace .rv-rail {
+    width: clamp(280px, 26vw, 340px);
+    min-width: 0;
+}
+.rv-workspace .review-section {
+    padding: var(--ds-space-5);
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-edge), var(--shadow-sm);
+}
+.rv-workspace .review-section-hdr {
+    min-height: var(--ds-control-h);
+    margin-bottom: var(--ds-space-3);
+}
+/* Card titles: display font, sentence case, like the planner cards. */
+.rv-workspace .review-section-title {
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-md);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: -0.005em;
+    text-transform: none;
+}
+
+/* ── Snapshot: label/value stat list, like New Trade's Calculated Metrics.
+   The value comes first in the markup; row-reverse puts the label left. ── */
+.rv-workspace .rv-snapshot-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+}
+.rv-workspace .rv-snapshot-grid > * {
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+.rv-workspace .rv-snapshot-grid > :last-child { border-bottom: 0; }
+.rv-workspace .rv-metric {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--ds-space-3);
+    min-width: 0;
+    padding: 7px 0;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    text-align: left;
+}
+.rv-workspace .rv-metric-lbl {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 13px;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--text-secondary);
+}
+.rv-workspace .rv-metric-val {
+    flex: 0 1 auto;
+    max-width: 55%;
+    margin: 0;
+    font-family: var(--ds-font-figure);
+    font-size: var(--ds-text-md);
+    font-weight: var(--ds-weight-bold);
+    letter-spacing: 0;
+    line-height: var(--ds-leading-tight);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+/* Edit Layout: handle and remove button sit at the row ends. */
+.rv-workspace .rv-snap-edit-mode .rv-metric { padding: 7px 28px 7px 22px; }
+.rv-workspace .rv-snap-card-wrap :is(.rv-snap-drag-handle, .rv-snap-remove-btn) {
+    top: 50%;
+    transform: translateY(-50%);
+}
+.rv-workspace .rv-snap-picker-panel { border-radius: var(--ds-radius-md); }
+.rv-workspace .rv-snap-picker-item {
+    background: var(--bg-secondary);
+    border-radius: var(--ds-radius-sm);
+}
+
+/* ── Reflection editor: toolbar + writing area as one inset frame ── */
+.rv-workspace .cleanup-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--ds-space-2);
+    min-width: 0;
+}
+.rv-workspace .cleanup-controls > span { min-width: 0; }
+/* The select's padding is inline in the template. */
+.rv-workspace .cleanup-controls select { padding: 0 8px !important; }
+.rv-workspace .rv-main .rv-toolbar {
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-md) var(--ds-radius-md) 0 0;
+}
+.rv-workspace .rv-main .rv-editor {
+    padding: var(--ds-space-4) var(--ds-space-5);
+    background: var(--field-bg);
+    border: 1px solid var(--border);
+    border-top: 0;
+    border-radius: 0 0 var(--ds-radius-md) var(--ds-radius-md);
+    font-size: var(--ds-text-md);
+    transition: border-color var(--ds-dur-fast) var(--ds-ease);
+}
+.rv-workspace .rv-main .rv-editor:empty::before { color: var(--text-muted); }
+.rv-workspace .review-section:has(.rv-editor:focus) :is(.rv-toolbar, .rv-editor) {
+    border-color: var(--primary);
+}
+
+/* ── Three columns from 1500px ── */
+@media (min-width: 1500px) {
+    .rv-workspace .rv-body {
+        display: grid;
+        grid-template-columns: minmax(260px, 320px) minmax(0, 1fr) minmax(260px, 300px);
+        align-items: start;
+    }
+    .rv-workspace .rv-rail { width: auto; }
+    .rv-workspace .rv-main { display: contents; }
+    /* The Reflection card runs the full height of the row. */
+    .rv-workspace .rv-main > .review-section:first-child { align-self: stretch; }
+    .rv-workspace .rv-nf-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 1000px) {
+    .rv-workspace .rv-rail { width: auto; }
+    .rv-workspace .rv-snapshot-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        column-gap: var(--ds-space-6);
+    }
+}
+@media (max-width: 600px) {
+    .rv-workspace .review-section { padding: var(--ds-space-4); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ANALYTICS PAGES
+   Snapshot, Performance Trends, Strategy, Timing, Symbols, Risk and
+   Discipline all render the snap-* widget markup, so one set of rules
+   covers the seven. Signed P&L colors and row highlights are inline
+   from the page scripts and stay as they are. Chart colors come from
+   getChartTheme() (js/pages/analytics-helpers.js) via the --chart-* tokens.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Classification text: the hue mixed toward the theme text until it clears
+   4.5:1 on its own tint in all seven themes (EDGE >= 5.0, LEAK >= 4.8,
+   HEMORRHAGE >= 4.9, NEUTRAL >= 4.8, INSUFFICIENT >= 4.5). */
+:root {
+    --cls-edge-text:    color-mix(in srgb, var(--success) 45%, var(--text-primary));
+    --cls-leak-text:    color-mix(in srgb, var(--warning) 40%, var(--text-primary));
+    --cls-hem-text:     color-mix(in srgb, var(--danger) 45%, var(--text-primary));
+    --cls-neutral-text: color-mix(in srgb, var(--text-secondary) 60%, var(--text-primary));
+    --cls-insuf-text:   color-mix(in srgb, var(--text-secondary) 75%, var(--text-primary));
+}
+
+/* ── Controls rows (Strategy, Timing) and the edit banner ── */
+.trd-controls-row {
+    border-radius: var(--ds-radius-md);
+    border-color: var(--border);
+}
+.snap-edit-banner {
+    background: var(--warning-soft);
+    border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+    border-radius: var(--ds-radius-md);
+    color: var(--cls-leak-text);
+}
+.snap-grid { gap: var(--ds-space-4); }
+.snap-grid.snap-edit-mode .snap-widget { border-color: color-mix(in srgb, var(--warning) 45%, transparent); }
+
+/* ── Widget cards: shared card radius, display-font sentence-case title ── */
+.snap-widget { border-radius: var(--card-radius); }
+.snap-widget-header {
+    gap: var(--ds-space-2);
+    min-height: 44px;
+    padding: 10px var(--ds-space-4);
+    border-bottom-color: color-mix(in srgb, var(--border) 70%, transparent);
+}
+.snap-widget-title {
+    min-width: 0;
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-base);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: -0.005em;
+    text-transform: none;
+    color: var(--text-primary);
+}
+.snap-widget-body { padding: var(--ds-space-4); }
+/* Timing's Hold Time table sits in the body without a scroll wrapper. */
+.snap-widget-body:has(> table) { overflow-x: auto; }
+
+.snap-ctrl-remove { border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
+.snap-ctrl-remove:hover {
+    background: var(--danger-soft);
+    border-color: var(--danger);
+}
+
+/* ── Figures: KPI-style values in the figure font, digits aligned ── */
+.su-setup-card-metric,
+.su-rank-value,
+.tm-cmp-value,
+.risk-conc-pct,
+.disc-detail-big,
+.disc-action-savings {
+    font-family: var(--ds-font-figure);
+    font-weight: var(--ds-weight-bold);
+    letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+}
+.su-setup-card-label,
+.tm-cmp-label {
+    font-size: var(--ds-text-xs);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+}
+.su-setup-card-meta,
+.tm-cmp-meta,
+.risk-conc-label,
+.disc-split-meta,
+.disc-split-desc { color: var(--text-secondary); }
+
+/* ── Stat lists: label left, value right, hairline between rows ── */
+.su-rank-list { gap: 0; }
+.su-rank-item {
+    border-radius: var(--ds-radius-sm);
+    padding: 7px 8px;
+}
+.su-rank-item + .su-rank-item { border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+.su-rank-item:hover { background: var(--surface-hover); }
+.su-rank-name { font-size: 13px; }
+.su-rank-value { font-size: var(--ds-text-base); }
+
+/* Comparison and split panels: inset tiles, semantic top edge. */
+.tm-cmp-col {
+    background: var(--bg-secondary);
+    border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    border-radius: var(--ds-radius-md);
+}
+.disc-split-card {
+    border-width: 1px;
+    border-top-width: var(--ds-indicator-width);
+    border-radius: var(--ds-radius-md);
+    background: var(--bg-secondary);
+}
+.disc-action-item {
+    border-radius: var(--ds-radius-sm);
+    border-left-width: var(--ds-indicator-width);
+}
+.risk-conc-hint { border-radius: var(--ds-radius-sm); }
+.risk-stop-banner {
+    background: var(--success-soft);
+    border-color: color-mix(in srgb, var(--success) 30%, transparent);
+    border-radius: var(--ds-radius-sm);
+}
+
+/* ── Tables: shared head, hairline rows, numbers right, no wrapping.
+   Each table already scrolls inside its widget (overflow-x wrapper). ── */
+.snap-trades-table,
+.su-leaderboard table { font-variant-numeric: tabular-nums; }
+.snap-trades-table thead { background: var(--table-head-bg); }
+.snap-trades-table th,
+.su-leaderboard th {
+    font-size: var(--ds-text-xs);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+}
+/* Sticky header: --table-head-bg is opaque, so rows don't show through. */
+.su-leaderboard th { background: var(--table-head-bg); }
+.su-leaderboard th.su-th-active { color: var(--info-text); }
+.su-leaderboard th:hover { color: var(--text-primary); }
+.snap-trades-table td,
+.su-leaderboard td {
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    white-space: nowrap;
+}
+.snap-trades-table tr:last-child td,
+.su-leaderboard tr:last-child td { border-bottom: none; }
+.su-leaderboard tr:hover td { background: var(--surface-hover); }
+
+.snap-trades-table :is(th, td):not(:first-child) { text-align: right; }
+/* Text columns stay left: Snapshot's Symbol/Side/Strategy, the Symbol column
+   of Risk's Oversized Trades, and the Symbols Classification column. */
+#snap-grid .snap-trades-table :is(th, td):not(:last-child),
+.snap-trades-table:has(td:nth-child(2) > strong) :is(th, td):nth-child(2),
+.sym-perf-table :is(th, td):last-child { text-align: left; }
+/* Strategy's grade table: the second column is Trades, a number. */
+.su-leaderboard table:has(.grade-badge) :is(th, td):nth-child(2) {
+    text-align: right;
+    max-width: none;
+    font-weight: inherit;
+    color: var(--text-secondary);
+}
+
+/* Strategy's Tag Usage table: Tag, Category and Description read left;
+   Used, Net P&L and Win Rate are figures. */
+.su-tag-usage table { min-width: 640px; }
+.su-tag-usage :is(th, td):is(:nth-child(1), :nth-child(2), :nth-child(6)) { text-align: left; }
+.su-tag-usage td:first-child {
+    font-size: inherit;
+    font-weight: var(--ds-weight-semibold);
+    color: var(--text-primary);
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.su-tag-usage td:nth-child(2) {
+    font-weight: inherit;
+    color: var(--text-secondary);
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.su-tag-usage td:nth-child(6) {
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* Used, Net P&L and Win Rate share the figure face, so all three render at
+   the same size (the narrow face alone made Net P&L look smaller). */
+.su-tag-usage td:is(:nth-child(3), :nth-child(4), :nth-child(5)) {
+    font-family: var(--ds-font-figure);
+    font-size: inherit;
+    font-variant-numeric: tabular-nums;
+}
+.su-tag-usage td.su-tu-pnl.su-lb-pos { color: var(--success); }
+.su-tag-usage td.su-tu-pnl.su-lb-neg { color: var(--danger); }
+.su-tag-usage tr.su-tu-unused td { opacity: 0.55; }
+.su-tu-ctrl {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+    margin: 0 0 var(--ds-space-3);
+    font-size: var(--ds-text-xs);
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+.su-tu-ctrl input {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+/* ── Status badges ── */
+/* Strategy / Timing rank medals and the timing flag: hue pulled toward the text. */
+.su-rank-num-1 { background: color-mix(in srgb, #f59e0b 20%, transparent); color: color-mix(in srgb, #f59e0b 45%, var(--text-primary)); }
+.su-rank-num-2 { background: color-mix(in srgb, #94a3b8 22%, transparent); color: color-mix(in srgb, #94a3b8 35%, var(--text-primary)); }
+.su-rank-num-3 { background: color-mix(in srgb, #b47b4c 20%, transparent); color: color-mix(in srgb, #b47b4c 45%, var(--text-primary)); }
+.su-rank-badge {
+    background: color-mix(in srgb, #f97316 15%, transparent);
+    color: color-mix(in srgb, #f97316 45%, var(--text-primary));
+}
+
+/* ── Symbols classification: badges (Symbol Performance table) ── */
+.sym-badge {
+    border: 1px solid transparent;
+    border-radius: var(--ds-radius-sm);
+    white-space: nowrap;
+}
+.sym-badge-edge {
+    background: color-mix(in srgb, var(--success) 14%, transparent);
+    border-color: color-mix(in srgb, var(--success) 30%, transparent);
+    color: var(--cls-edge-text);
+}
+.sym-badge-neutral {
+    background: var(--surface-active);
+    color: var(--cls-neutral-text);
+}
+.sym-badge-leak {
+    background: color-mix(in srgb, var(--warning) 16%, transparent);
+    border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+    color: var(--cls-leak-text);
+}
+/* Most severe: strongest fill and border. */
+.sym-badge-hemorrhage {
+    background: color-mix(in srgb, var(--danger) 26%, transparent);
+    border-color: color-mix(in srgb, var(--danger) 60%, transparent);
+    color: var(--cls-hem-text);
+    font-weight: 800;
+}
+.sym-badge-insufficient {
+    background: transparent;
+    border: 1px dashed color-mix(in srgb, var(--text-secondary) 45%, transparent);
+    color: var(--cls-insuf-text);
+}
+
+/* ── Symbols classification: summary tiles. Sizes stay with Denarii.css
+   (Stage 3 fit); HEMORRHAGE keeps its Stage 3 tinted tile there. ── */
+.sym-class-tile--edge {
+    background: color-mix(in srgb, var(--success) 10%, transparent);
+    border-color: color-mix(in srgb, var(--success) 35%, transparent);
+}
+.sym-class-tile--edge :is(.sym-class-tile-count, .sym-class-tile-label) { color: var(--cls-edge-text); }
+.sym-class-tile--neutral { border-color: color-mix(in srgb, var(--text-secondary) 35%, transparent); }
+.sym-class-tile--neutral :is(.sym-class-tile-count, .sym-class-tile-label) { color: var(--cls-neutral-text); }
+.sym-class-tile--leak {
+    background: color-mix(in srgb, var(--warning) 10%, transparent);
+    border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+}
+.sym-class-tile--leak :is(.sym-class-tile-count, .sym-class-tile-label) { color: var(--cls-leak-text); }
+.sym-class-tile--insufficient {
+    border-style: dashed;
+    border-color: color-mix(in srgb, var(--text-secondary) 40%, transparent);
+}
+.sym-class-tile--insufficient :is(.sym-class-tile-count, .sym-class-tile-label) { color: var(--cls-insuf-text); }
+
+/* ── Help popover (Trends, Strategy, Timing) ── */
+.trd-help-popover {
+    border-radius: var(--ds-radius-md);
+    box-shadow: var(--shadow-lg);
+}
+.thp-label { color: var(--info-text); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   REMAINING SCREENS
+   Strategy & Tags, Prompt Library, Run Analysis, Saved Reports,
+   Settings, Help, the login screen and the remaining modals. Most of
+   these rules replace former inline styles in index.html. Every
+   !important overrides an inline style written by JS.
+   Colors stay with the themes; these rules set size, radius, spacing,
+   type and the shared token tints.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Helpers (formerly inline) ── */
+.card-subtitle {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+.card-header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+}
+.label-note {
+    font-weight: var(--ds-weight-regular);
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--text-secondary);
+}
+.field-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: var(--ds-text-xs);
+    line-height: var(--ds-leading-normal);
+    color: var(--text-secondary);
+}
+.pw-field { position: relative; }
+.pw-field > input { padding-right: 40px; }
+.field-row-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ds-space-4);
+}
+.field-row-gap { margin-bottom: var(--ds-space-4); }
+@media (max-width: 600px) {
+    .field-row-2 { grid-template-columns: minmax(0, 1fr); }
+}
+.label-row {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+    margin-bottom: 6px;
+}
+.check-label {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+    font-size: 13px;
+    font-weight: var(--ds-weight-medium);
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+.check-label input { accent-color: var(--primary); }
+.th-sort {
+    cursor: pointer;
+    user-select: none;
+}
+.th-sort:hover { color: var(--text-primary); }
+
+/* ── Fields: New Trade labels and sizes on these screens ── */
+:is(#strategy-editor, #settings, #ai-run, .login-card, #prompt-editor-modal, #broker-account-modal,
+    #broker-account-cash-modal, #import-account-prompt-modal, #broker-delete-modal) :is(.form-group, .label-row) > label:not(.check-label) {
+    margin-bottom: 6px;
+    font-size: var(--ds-text-xs);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+:is(#strategy-editor, #settings, #ai-run, .login-card, #prompt-editor-modal, #broker-account-modal,
+    #broker-account-cash-modal, #import-account-prompt-modal, #broker-delete-modal)
+    .form-group :is(input:not([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="hidden"]), select) {
+    height: var(--field-h);
+    padding: 0 12px;
+    border-radius: var(--field-radius);
+    font-size: var(--ds-text-base);
+}
+:is(#strategy-editor, #settings, #ai-run, #prompt-editor-modal) .form-group textarea {
+    padding: 10px 12px;
+    border-radius: var(--field-radius);
+    line-height: var(--ds-leading-normal);
+}
+:is(#settings, .login-card) .pw-field > input { padding-right: 40px; }
+.label-row > label,
+#prompt-editor-modal .label-row > label:not(.check-label) { margin: 0; }
+
+/* ── Filter bars: Prompt Library, Saved Reports and Manage Tags take the
+   shared .snap-filter-bar look; their controls match its fields.
+   (0,2,1) ties .ai-filter-bar input[type="text"] and wins on order. ── */
+.ai-filter-bar {
+    gap: var(--ds-space-2) var(--ds-space-3);
+    padding: 12px 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-md);
+}
+.ai-filter-bar :is(input.ai-filter-search, select.snap-sel, select.ai-filter-select) {
+    width: auto;
+    min-width: 120px;
+    height: var(--ds-control-h);
+    padding: 0 10px;
+    font-size: 13px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-sm);
+    color: var(--text-primary);
+}
+.ai-filter-bar :is(input.ai-filter-search, select.snap-sel, select.ai-filter-select):hover { border-color: var(--border-strong); }
+.ai-filter-bar :is(input.ai-filter-search, select.snap-sel, select.ai-filter-select):focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+}
+.ai-filter-bar input.ai-filter-search {
+    flex: 1 1 180px;
+    min-width: 160px;
+    max-width: 320px;
+}
+.ai-filter-bar .snap-filter-label { margin: 0; }
+#ai-lib-sort {
+    flex: 0 1 160px;
+    min-width: 130px;
+}
+.ai-filter-bar-right { gap: var(--ds-space-2); }
+#ai-run-filter-bar { margin-bottom: var(--ds-space-5); }
+
+/* ── Toggles and pill tabs: the shared .snap-pill look ── */
+.ai-fav-toggle,
+.ai-view-toggle-btn,
+.tm-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-pill);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: var(--ds-weight-semibold);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--ds-dur-fast) var(--ds-ease), color var(--ds-dur-fast) var(--ds-ease),
+                border-color var(--ds-dur-fast) var(--ds-ease);
+}
+.ai-fav-toggle {
+    height: var(--ds-control-h);
+    font-size: 13px;
+    box-shadow: var(--shadow-sm);
+}
+.ai-view-toggle-btn {
+    height: var(--ds-control-h-sm);
+    box-shadow: var(--shadow-sm);
+}
+.tm-tab { height: var(--ds-control-h-sm); }
+:is(.ai-fav-toggle, .ai-view-toggle-btn, .tm-tab):hover:not(.active) {
+    background: var(--bg-tertiary);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+:is(.ai-fav-toggle, .ai-view-toggle-btn, .tm-tab).active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--on-primary);
+    font-weight: var(--ds-weight-semibold);
+}
+:is(.ai-fav-toggle, .ai-view-toggle-btn).active { box-shadow: var(--shadow-press); }
+:is(.ai-fav-toggle, .ai-view-toggle-btn, .tm-tab):focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+.ai-view-toggle-bar { gap: var(--ds-space-1); }
+
+/* ── Side navigation: Settings and Help, the sidebar nav-item pattern ── */
+.settings-nav-item,
+.help-nav-btn {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: var(--nav-item-h);
+    padding: 6px 12px;
+    background: none;
+    border: 0;
+    border-radius: var(--ds-radius-md);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: var(--ds-weight-medium);
+    line-height: 1.35;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--ds-dur-fast) var(--ds-ease), color var(--ds-dur-fast) var(--ds-ease);
+}
+:is(.settings-nav-item, .help-nav-btn):hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+}
+/* :root ties the Forged .settings-nav-item.active rule and wins on order. */
+:root :is(.settings-nav-item, .help-nav-btn).active {
+    background: var(--accent-soft);
+    color: var(--text-primary);
+    font-weight: var(--ds-weight-semibold);
+    box-shadow: inset var(--ds-indicator-width) 0 0 var(--primary);
+}
+:is(.settings-nav-item, .help-nav-btn):focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   STRATEGY MANAGEMENT + STRATEGY EDITOR
+   ═══════════════════════════════════════════════════════════════════ */
+.strat-fav-wrap { position: relative; }
+.strat-fav-menu {
+    padding: var(--ds-space-1);
+    border-radius: var(--ds-radius-md);
+    box-shadow: var(--shadow-lg);
+}
+.strat-fav-menu-item { border-radius: var(--ds-radius-sm); }
+.strat-fav-menu-item:hover { background: var(--surface-hover); }
+
+/* Strategy list table: the dashboard table look.
+   (1,0,1) beats the Blush th/thead rules. */
+#strategies-list { overflow-x: auto; }
+#strategies-list table { font-variant-numeric: tabular-nums; }
+#strategies-list table thead { background: var(--table-head-bg); }
+#strategies-list table th {
+    padding: 8px 12px;
+    font-size: var(--ds-text-xs);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+}
+#strategies-list table td {
+    height: var(--table-row-h);
+    padding-block: 4px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+#strategies-list table tbody tr:last-child td { border-bottom: 0; }
+#strategies-list table tbody tr:hover td { background: var(--surface-hover); }
+/* Trades, P&L, Win Rate, Avg P&L */
+#strategies-list :is(th, td):nth-child(n+3):nth-child(-n+6) { text-align: right; }
+#strategies-list td .btn-small {
+    height: var(--ds-control-h-sm);
+    padding: 0 12px;
+    font-size: var(--ds-text-sm);
+}
+
+/* ── Editor: basics card, builder and preview cards ── */
+.se-basics,
+.se-builder,
+.se-preview {
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-edge), var(--shadow-sm);
+}
+.se-basics {
+    margin-bottom: var(--ds-space-4);
+    padding: var(--ds-space-5) var(--ds-space-6);
+}
+.se-basics-row { gap: var(--ds-space-5); }
+.se-basics .form-group { margin-bottom: 0; }
+.se-workspace { gap: var(--ds-space-4); }
+/* Panel heads: the New Trade strategy card's tinted header. */
+.se-panel-head {
+    min-height: 52px;
+    padding: 10px var(--ds-space-5);
+    background: var(--table-head-bg);
+    border-bottom-color: var(--border);
+}
+.se-panel-label {
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-md);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: -0.005em;
+    text-transform: none;
+    color: var(--text-primary);
+}
+/* + Add Group: secondary, like New Trade's add buttons. */
+.se-panel-head .btn {
+    height: var(--ds-control-h-sm);
+    padding: 0 12px;
+    font-size: var(--ds-text-sm);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+}
+.se-panel-head .btn:hover {
+    background: var(--surface-active);
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+}
+.se-color-row { margin-top: var(--ds-space-2); }
+
+/* Group list: nav-item pattern */
+.se-group-list { padding: 10px 12px 4px; gap: 2px; }
+.se-gl-item {
+    padding: 8px 12px;
+    background: transparent;
+    border: 0;
+    border-radius: var(--ds-radius-md);
+}
+.se-gl-item:hover { background: var(--surface-hover); }
+.se-gl-item.active {
+    background: var(--accent-soft);
+    box-shadow: inset var(--ds-indicator-width) 0 0 var(--primary);
+}
+.se-gl-count { font-variant-numeric: tabular-nums; }
+.se-group-editor { padding: var(--ds-space-4) var(--ds-space-5) var(--ds-space-5); }
+.se-ge-head input {
+    height: var(--field-h);
+    padding: 0 12px;
+    border-radius: var(--field-radius);
+}
+.se-ge-head .btn,
+.se-rule-add {
+    height: var(--ds-control-h-sm);
+    padding: 0 12px;
+    font-size: var(--ds-text-sm);
+}
+
+/* Rule rows: the New Trade strategy card's checklist rows. */
+.se-rule {
+    margin-bottom: 6px;
+    padding: 10px 12px;
+    background: var(--bg-primary);
+    border: 0;
+    border-radius: var(--ds-radius-sm);
+}
+[data-theme="blush-power"] .se-rule { background: rgba(255,255,255,0.72); }
+.se-rule-primary input[type="text"] {
+    height: var(--ds-control-h);
+    padding: 0 10px;
+    border-radius: var(--field-radius);
+}
+.se-rule-secondary { gap: var(--ds-space-2) var(--ds-space-3); }
+.se-rule-ctrl input[type="checkbox"] { accent-color: var(--primary); }
+.se-rule-ctrl select {
+    height: var(--ds-control-h-sm);
+    padding: 0 8px;
+    border-radius: var(--ds-radius-sm);
+}
+.se-rule-star-note { border-radius: var(--ds-radius-sm); }
+.se-rule-star-note.active {
+    background: var(--surface-active);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+/* Remove (×): ghost danger, like New Trade's remove buttons. */
+.se-rule-del {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--ds-control-h-sm);
+    height: var(--ds-control-h-sm);
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-sm);
+    color: var(--danger-text);
+}
+.se-rule-del:hover {
+    background: var(--danger-soft);
+    border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+    color: var(--danger-text);
+}
+.se-rule-mandatory-badge,
+.se-pv-tag-mandatory {
+    background: var(--danger-soft);
+    color: var(--danger-text);
+    border-radius: var(--ds-radius-sm);
+}
+
+/* Preview */
+.se-preview-body { padding: var(--ds-space-4) var(--ds-space-5); }
+.se-pv-group-name {
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-base);
+    font-weight: var(--ds-weight-semibold);
+}
+.se-pv-group-badge {
+    background: var(--surface-active);
+    border-radius: var(--ds-radius-pill);
+}
+.se-pv-tag {
+    background: var(--surface-active);
+    border-radius: var(--ds-radius-sm);
+}
+
+/* Color swatches (strategy and broker account): a ring that reads on
+   light and dark cards. The broker swatches keep their inline border. */
+.color-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ds-space-2);
+}
+.se-color-row .color-btn {
+    width: 28px;
+    height: 28px;
+    border-width: 2px;
+    border-radius: var(--ds-radius-sm);
+}
+#ba-color-picker .color-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+.color-btn.selected {
+    border-color: var(--bg-card);
+    box-shadow: 0 0 0 2px var(--text-primary);
+}
+.color-btn:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PROMPT LIBRARY · RUN ANALYSIS · SAVED REPORTS
+   Inset cards inside the page card, token badges, shared fields.
+   ═══════════════════════════════════════════════════════════════════ */
+.prompt-grid,
+.ai-report-grid { gap: var(--ds-space-4); }
+.prompt-card,
+.ai-report-card,
+.ai-run-output-panel {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-lg);
+}
+.prompt-card,
+.ai-report-card { padding: var(--ds-space-4) var(--ds-space-5); }
+.prompt-card:hover,
+.ai-report-card:hover { border-color: var(--border-strong); }
+.prompt-card-title,
+.ai-report-card-title {
+    font-family: var(--ds-font-display);
+    font-weight: var(--ds-weight-semibold);
+}
+.prompt-card-footer .btn,
+.ai-report-card-footer .btn,
+.ai-report-viewer-header .btn {
+    height: var(--ds-control-h-sm);
+    padding: 0 12px;
+    font-size: var(--ds-text-sm);
+}
+/* Delete: danger text on the secondary button. (0,2,0) ties the Forged and
+   Blush .btn-secondary colors and wins on order. */
+.prompt-card .prompt-delete-btn,
+:is(.ai-report-card, .ai-report-viewer) .ai-report-delete-btn { color: var(--danger-text); }
+.prompt-card .prompt-delete-btn:hover,
+:is(.ai-report-card, .ai-report-viewer) .ai-report-delete-btn:hover {
+    background: var(--danger-soft);
+    border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+}
+
+/* ── Badges: token tints. Forged and Blush keep their own (0,2,0) colors. ── */
+.prompt-source-badge,
+.ai-output-badge { border-radius: var(--ds-radius-sm); }
+.prompt-source-global { background: var(--accent-soft); color: var(--info-text); }
+.prompt-source-user   { background: var(--success-soft); color: var(--success-text); }
+.ai-output-badge {
+    background: var(--accent-soft);
+    border-color: transparent;
+    color: var(--info-text);
+}
+.ai-output-badge.ai-output-badge-muted {
+    background: var(--surface-active);
+    border-color: transparent;
+    color: var(--text-secondary);
+}
+.ai-report-filter-pills { gap: var(--ds-space-1); }
+.ai-report-pill {
+    padding: 2px 8px;
+    background: var(--surface-active);
+    border-color: transparent;
+    border-radius: var(--ds-radius-pill);
+    color: var(--text-secondary);
+}
+
+/* ── Run Analysis (formerly inline) ── */
+.ai-run-layout { gap: var(--ds-space-6); }
+#ai-run-prompt-text { min-height: 120px; }
+#ai-run-trade-count {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ds-space-2);
+    margin-bottom: 14px;
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-md);
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+#ai-run-trade-count-val {
+    font-weight: var(--ds-weight-semibold);
+    font-variant-numeric: tabular-nums;
+}
+#ai-run-status {
+    margin-top: 10px;
+    font-size: 13px;
+}
+.ai-run-output-panel { padding: var(--ds-space-5); }
+#ai-run-data-summary {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-md);
+}
+.ai-output-loading-text {
+    margin-top: 14px;
+    color: var(--text-secondary);
+}
+.ai-output-elapsed {
+    font-size: var(--ds-text-sm);
+    color: var(--text-muted);
+}
+.ai-output-error {
+    background: var(--danger-soft);
+    border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+    border-radius: var(--ds-radius-md);
+    color: var(--danger-text);
+}
+
+/* ── Saved Reports viewer ── */
+.ai-report-viewer-title {
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-xl);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: -0.01em;
+}
+
+/* ── Prompt editor modal and tips ── */
+#pe-prompttext { min-height: 160px; }
+.pe-tip-popover {
+    border-radius: var(--ds-radius-lg);
+    box-shadow: var(--shadow-lg);
+}
+.pe-tip-pre { border-radius: var(--ds-radius-sm); }
+.ai-toast { box-shadow: var(--shadow-lg); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   SETTINGS
+   Nav and content are two cards. The ≤768px rules in Denarii.css
+   (#settings > div, #settings-profile > div) still stack the grids.
+   ═══════════════════════════════════════════════════════════════════ */
+.settings-layout {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: var(--ds-space-6);
+    align-items: start;
+}
+.settings-sidebar,
+.settings-content {
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-edge), var(--shadow-sm);
+}
+.settings-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--ds-space-3);
+}
+.settings-content {
+    min-width: 0;
+    padding: var(--ds-space-6);
+}
+/* Tags Management page (Tags panel open from the sidebar): no Settings nav,
+   the card takes the full width. Class set by applySettingsPageMode(). */
+#settings.settings--tags-page .settings-layout { grid-template-columns: minmax(0, 1fr); }
+#settings.settings--tags-page .settings-sidebar { display: none; }
+.settings-nav-label {
+    margin: 0 0 6px;
+    padding: 0 12px;
+    font-size: var(--ds-text-xs);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.settings-nav-item + .settings-nav-label { margin-top: var(--ds-space-4); }
+.settings-version {
+    margin-top: var(--ds-space-4);
+    padding: 12px 12px 0;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    line-height: 1.6;
+    color: var(--text-muted);
+    white-space: pre-line;
+}
+.settings-version:empty { display: none; }
+
+/* Section titles: display font, sentence case, muted description. */
+.settings-title {
+    margin: 0 0 var(--ds-space-5);
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-lg);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+}
+.settings-title:has(+ .settings-desc) { margin-bottom: 6px; }
+.settings-panel-head .settings-title { margin: 0; }
+/* Tags Management: the description sits on the "+ New category" row. */
+.settings-panel-head .settings-desc { flex: 1 1 280px; margin: 0; }
+.settings-title--spaced {
+    margin-top: var(--ds-space-7);
+    padding-top: var(--ds-space-6);
+    border-top: 1px solid var(--border);
+}
+.settings-title--danger { color: var(--danger-text); }
+.settings-subtitle {
+    margin: 0 0 var(--ds-space-3);
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-md);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: -0.005em;
+}
+.settings-desc {
+    max-width: 72ch;
+    margin: 0 0 var(--ds-space-5);
+    font-size: 13px;
+    line-height: var(--ds-leading-normal);
+    color: var(--text-secondary);
+}
+.settings-panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--ds-space-3);
+    margin-bottom: var(--ds-space-5);
+}
+.settings-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--ds-space-2);
+}
+.settings-profile-grid {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: var(--ds-space-7);
+}
+@media (max-width: 1000px) {
+    .settings-profile-grid { grid-template-columns: minmax(0, 1fr); }
+}
+.settings-desc a { color: var(--info-text); }
+/* Update image: a <label> styled as a button keeps button text. */
+#settings label.btn {
+    margin: 0;
+    letter-spacing: 0;
+    text-transform: none;
+}
+.settings-content input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.settings-field-btn { height: var(--field-h); }
+.settings-empty {
+    padding: 40px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+.settings-danger-zone {
+    margin-top: 40px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+}
+.settings-danger-confirm {
+    margin-top: var(--ds-space-6);
+    padding: var(--ds-space-5);
+    background: var(--danger-soft);
+    border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
+    border-radius: var(--ds-radius-lg);
+}
+/* Tag form: inset panel. (1,1,0) beats the theme .card rules. */
+#settings .settings-subcard {
+    margin-bottom: var(--ds-space-5);
+    padding: var(--ds-space-5);
+    background: var(--bg-secondary);
+    border: 1px solid color-mix(in srgb, var(--primary) 45%, var(--border));
+    border-radius: var(--ds-radius-lg);
+    box-shadow: none;
+}
+/* Tags Management: categories expand in place to list their tags.
+   Rows are rendered by renderCategoryList() in settings.js. */
+.tgm-newcat {
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: var(--ds-space-2);
+    margin-bottom: var(--ds-space-4);
+}
+.tgm-newcat-field {
+    flex: 1 1 220px;
+    max-width: 360px;
+    margin: 0;
+}
+.tgm-search { margin-bottom: var(--ds-space-4); }
+.tgm-cat-list {
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-lg);
+    overflow: hidden;
+}
+.tgm-cat + .tgm-cat { border-top: 1px solid var(--border); }
+.tgm-cat.is-unfav .tgm-cat-head { opacity: 0.55; }
+.tgm-cat-head {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+    padding: var(--ds-space-2) var(--ds-space-3);
+}
+.tgm-cat.is-open > .tgm-cat-head { background: var(--surface-hover); }
+.tgm-cat-toggle {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    align-items: center;
+    gap: var(--ds-space-2);
+    padding: var(--ds-space-2) 0;
+    background: none;
+    border: 0;
+    color: var(--text-primary);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.tgm-cat-toggle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--focus-ring);
+    border-radius: var(--ds-radius-sm);
+}
+.tgm-chevron {
+    flex: none;
+    width: 0;
+    height: 0;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-left: 5px solid var(--text-secondary);
+    transition: transform 0.15s ease;
+}
+.tgm-cat.is-open .tgm-chevron { transform: rotate(90deg); }
+.tgm-cat-toggle .tag-category-dot { flex: none; margin-right: 0; }
+.tgm-cat-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--ds-text-sm);
+    font-weight: var(--ds-weight-semibold);
+}
+.tgm-cat-count {
+    flex: none;
+    font-size: var(--ds-text-xs);
+    color: var(--text-secondary);
+}
+.tgm-cat-head--edit input {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.tgm-star {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: var(--ds-radius-sm);
+    font-size: 16px;
+    line-height: 1;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+.tgm-star.is-fav { color: var(--warning); }
+.tgm-star:hover { background: var(--surface-hover); }
+.tgm-star--none { cursor: default; }
+.tgm-star--none:hover { background: none; }
+.tgm-cat-body {
+    padding: var(--ds-space-2) var(--ds-space-3) var(--ds-space-4) var(--ds-space-8);
+    border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+.tgm-tag {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+    padding: var(--ds-space-1) 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+.tgm-tag.is-unfav .tgm-tag-text { opacity: 0.55; }
+.tgm-tag-text {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    align-items: baseline;
+    flex-wrap: wrap;
+    column-gap: var(--ds-space-3);
+}
+.tgm-tag-name {
+    font-size: var(--ds-text-sm);
+    font-weight: var(--ds-weight-semibold);
+    color: var(--text-primary);
+}
+.tgm-tag-desc {
+    min-width: 0;
+    font-size: var(--ds-text-xs);
+    color: var(--text-secondary);
+}
+.tgm-badge {
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-sm);
+}
+.tgm-add-tag { margin-top: var(--ds-space-3); }
+.tgm-empty {
+    margin: var(--ds-space-3) 0 0;
+    font-size: var(--ds-text-sm);
+    color: var(--text-secondary);
+}
+.tgm-cat-list > .tgm-empty { margin: 0; padding: var(--ds-space-5); text-align: center; }
+#settings .tgm-form-slot .settings-subcard { margin: var(--ds-space-3) 0 0; }
+@media (max-width: 600px) {
+    .tgm-newcat-field { flex-basis: 100%; max-width: none; }
+    .tgm-search input.ai-filter-search { max-width: none; }
+    .tgm-cat-head { padding: var(--ds-space-1) var(--ds-space-2); }
+    .tgm-cat-body { padding: var(--ds-space-2) var(--ds-space-3) var(--ds-space-4); }
+    /* Description drops under the name instead of squeezing beside it. */
+    .tgm-tag-text { flex-direction: column; align-items: flex-start; row-gap: 2px; }
+    #settings .tgm-form-slot .settings-subcard { padding: var(--ds-space-4); }
+}
+
+/* Broker Accounts: shared card. The colored left edge, opacity and badges
+   stay inline from renderBrokerAccountsList. */
+#broker-accounts-list .broker-account-card {
+    padding: var(--ds-space-4) var(--ds-space-5);
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-edge), var(--shadow-sm);
+}
+#broker-accounts-list .broker-account-card:hover { border-color: var(--border-strong); }
+#broker-accounts-list .ba-name {
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-md);
+    font-weight: var(--ds-weight-semibold);
+}
+#broker-accounts-list .ba-meta { font-variant-numeric: tabular-nums; }
+#broker-accounts-list .ba-actions .btn-small {
+    height: var(--ds-control-h-sm);
+    font-size: var(--ds-text-sm);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   HELP
+   One card: topic nav on the left, content on the right.
+   ═══════════════════════════════════════════════════════════════════ */
+.help-layout {
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-edge), var(--shadow-sm);
+}
+.help-nav {
+    padding: var(--ds-space-4) var(--ds-space-3);
+    background: var(--table-head-bg);
+    border-right-color: var(--border);
+}
+.help-nav-heading {
+    padding: 0 12px var(--ds-space-2);
+    font-size: var(--ds-text-xs);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+}
+.help-nav-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.help-content-panel { padding: var(--ds-space-7) var(--ds-space-8); }
+.help-section h4 {
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-md);
+    letter-spacing: -0.005em;
+}
+.help-section kbd { border-radius: var(--ds-radius-sm); }
+@media (max-width: 600px) {
+    .help-nav { border-right: 0; border-bottom: 1px solid var(--border); }
+    .help-content-panel { padding: var(--ds-space-5) var(--ds-space-4); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LOGIN / SIGN-UP
+   The logo and its drop-shadow stay inline and unchanged. Forged keeps
+   its gold heading gradient and card ((0,2,x) rules in Denarii.css);
+   every other theme sets the heading in the theme text color.
+   ═══════════════════════════════════════════════════════════════════ */
+.login-card {
+    padding: var(--ds-space-8);
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+    border-radius: var(--card-radius);
+}
+@media (max-width: 600px) {
+    .login-card { padding: var(--ds-space-6) var(--ds-space-5); }
+}
+.login-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 10px;
+}
+.login-card h1 {
+    margin: 0;
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-2xl);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    background: none;
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
+    -webkit-text-fill-color: currentColor;
+    color: var(--text-primary);
+}
+.login-kicker {
+    font-size: var(--ds-text-sm);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+.login-tagline {
+    margin-bottom: var(--ds-space-4);
+    color: var(--text-secondary);
+}
+.auth-view h3 {
+    margin-bottom: 4px;
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-xl);
+    font-weight: var(--ds-weight-semibold);
+    letter-spacing: -0.01em;
+}
+.auth-desc {
+    margin-bottom: 18px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+.auth-error {
+    background: var(--danger-soft);
+    border-left-color: var(--danger);
+    border-radius: var(--ds-radius-md);
+    color: var(--danger-text);
+}
+.auth-links a { color: var(--info-text); }
+.btn-group .btn { min-height: 40px; }
+.account-item { border-radius: var(--ds-radius-md); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   REMAINING MODALS (formerly inline)
+   Danger actions use .btn-danger. The stock chart canvas keeps its
+   lightweight-charts colors (canvas options take no CSS variables).
+   ═══════════════════════════════════════════════════════════════════ */
+.modal-desc {
+    margin-bottom: var(--ds-space-4);
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+.modal-note-warn {
+    margin-bottom: 14px;
+    font-size: var(--ds-text-sm);
+    color: var(--warning-text);
+}
+.modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: var(--ds-space-3) var(--ds-space-4);
+    margin-bottom: var(--ds-space-5);
+}
+.modal .modal-head h2 { margin: 0; }
+.modal-subtitle {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+.modal-head-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.modal-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+#broker-account-form { margin-top: var(--ds-space-5); }
+.modal-buttons { flex-wrap: wrap; }
+.modal-footer {
+    margin-top: var(--ds-space-4);
+    padding-top: var(--ds-space-4);
+    border-top: 1px solid var(--border);
+}
+/* inherit carries each theme's modal surface down through the form. */
+#broker-account-form,
+.modal-footer--sticky { background: inherit; }
+.modal-footer--sticky {
+    margin-top: var(--ds-space-5);
+    position: sticky;
+    bottom: 0;
+}
+.modal-buttons--fill {
+    gap: 10px;
+    margin-top: var(--ds-space-5);
+}
+.modal-buttons--fill > .btn { flex: 1; }
+.modal-buttons--stack {
+    flex-direction: column;
+    gap: 10px;
+    margin-top: var(--ds-space-5);
+}
+.modal-buttons--end {
+    justify-content: flex-end;
+    gap: var(--ds-space-2);
+    margin-top: 18px;
+}
+.modal-info-note {
+    margin-top: var(--ds-space-3);
+    padding: var(--ds-space-3);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-md);
+    font-size: var(--ds-text-sm);
+    color: var(--text-secondary);
+}
+
+/* ── Stock chart header ── */
+.chart-tf-group {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+}
+.chart-tf-group label {
+    margin: 0;
+    font-size: 13px;
+    font-weight: var(--ds-weight-medium);
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--text-secondary);
+}
+#chart-timeframe {
+    width: auto;
+    min-width: 110px;
+    height: var(--ds-control-h);
+    padding: 0 10px;
+}
+
+/* ── Broker account cash ledger: summary and underline tabs.
+   switchBacTab writes each tab's color and underline color inline. ── */
+#bac-cash-summary {
+    margin-bottom: 14px;
+    padding: 10px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--ds-radius-md);
+    font-size: 13px;
+}
+#bac-tab-bar {
+    display: flex;
+    gap: var(--ds-space-1);
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+}
+.bac-tab-btn {
+    margin-bottom: -1px;
+    padding: 8px 14px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: var(--ds-weight-semibold);
+    cursor: pointer;
+    transition: color var(--ds-dur-fast) var(--ds-ease), border-color var(--ds-dur-fast) var(--ds-ease);
+}
+.bac-tab-btn:hover { color: var(--text-primary) !important; }
+.bac-tab-btn:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+}
+
+/* ── Template manager ── */
+.modal .tm-title {
+    margin: 0;
+    font-size: var(--ds-text-md);
+}
+.tm-header { padding: 14px var(--ds-space-5); }
+.tm-search-input {
+    height: var(--ds-control-h-sm);
+    border-radius: var(--field-radius);
+}
+.tm-filter-tabs {
+    gap: var(--ds-space-1);
+    padding: var(--ds-space-2) 10px;
+}
+.tm-list-item { border-radius: var(--ds-radius-sm); }
+.tm-list-item:hover { background: var(--surface-hover); }
+.tm-list-item.active {
+    background: var(--accent-soft);
+    box-shadow: inset var(--ds-indicator-width) 0 0 var(--primary);
+}
+.tm-list-item.active .tm-list-item-name { color: var(--text-primary); }
+.tm-list-item-sys {
+    background: var(--surface-active);
+    border-color: transparent;
+    border-radius: var(--ds-radius-sm);
+}
+.tm-badge { border-radius: var(--ds-radius-sm); }
+.tm-badge.sys { background: var(--accent-soft);  color: var(--info-text); }
+.tm-badge.usr { background: var(--success-soft); color: var(--success-text); }
+.tm-detail-name-input {
+    height: var(--field-h);
+    border-radius: var(--field-radius);
+}
+.tm-timeframes-row { border-radius: var(--ds-radius-md); }
+.tm-timeframes-label {
+    font-size: var(--ds-text-xs);
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+}
+/* Checkbox labels: sentence case, not the global uppercase label. */
+.tm-tf-label {
+    margin: 0;
+    font-weight: var(--ds-weight-medium);
+    letter-spacing: 0;
+    text-transform: none;
+}
+.tm-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ds-space-2);
+}
+
+/* ── Ticker badge (js/shared/ticker-badge.js) ── */
+/* Single-symbol views only: Trade Reflection entry header and the Symbols
+   Best / Worst cards. Eight soft hues, none pure green or red, so a badge
+   never reads as win / loss. Dark tints are the default (Denarii Forged,
+   Soft Dark, Warm Midnight); light themes swap to pale tints with dark text.
+   Every pair clears 6.9:1. */
+:root {
+    --ticker-0-bg: #14403D; --ticker-0-fg: #9FE3DC; /* teal   */
+    --ticker-1-bg: #1B3456; --ticker-1-fg: #AFCDF5; /* blue   */
+    --ticker-2-bg: #2C2758; --ticker-2-fg: #C8BFF7; /* indigo */
+    --ticker-3-bg: #4A3510; --ticker-3-fg: #F3D28E; /* amber  */
+    --ticker-4-bg: #4F2A14; --ticker-4-fg: #F7C09C; /* orange */
+    --ticker-5-bg: #4F1F37; --ticker-5-fg: #F4B5D3; /* pink   */
+    --ticker-6-bg: #2A333F; --ticker-6-fg: #C9D3DE; /* slate  */
+    --ticker-7-bg: #393C14; --ticker-7-fg: #D9DC9E; /* olive  */
+}
+:root:is([data-theme="harbor-light"], [data-theme="sage-journal"], [data-theme="dawn-ember"], [data-theme="blush-power"]) {
+    --ticker-0-bg: #CCEFEC; --ticker-0-fg: #0B5450;
+    --ticker-1-bg: #D6E6FB; --ticker-1-fg: #163F78;
+    --ticker-2-bg: #E2DDFA; --ticker-2-fg: #3A2A82;
+    --ticker-3-bg: #F8E8C4; --ticker-3-fg: #6B4505;
+    --ticker-4-bg: #FBDCC8; --ticker-4-fg: #7A3510;
+    --ticker-5-bg: #F8D8E8; --ticker-5-fg: #7A1F4D;
+    --ticker-6-bg: #DDE3EA; --ticker-6-fg: #33404F;
+    --ticker-7-bg: #E6E8C6; --ticker-7-fg: #4A4E10;
+}
+.ds-ticker-badge {
+    --tb-size: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: var(--tb-size);
+    height: var(--tb-size);
+    border-radius: 50%;
+    background: var(--tb-bg);
+    color: var(--tb-fg);
+    /* Outline ring in the letter color, inset so the size never changes:
+       1px at 24px and below, 1.5px at 32px, 2px at 40px. */
+    --tb-ring: max(1px, calc(var(--tb-size) / 16 - 0.5px));
+    box-shadow: inset 0 0 0 var(--tb-ring) var(--tb-fg);
+    font-family: var(--ds-font-body);
+    font-size: calc(var(--tb-size) * 0.36);
+    font-weight: var(--ds-weight-semibold);
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    vertical-align: middle;
+    user-select: none;
+}
+.ds-ticker-badge--0 { --tb-bg: var(--ticker-0-bg); --tb-fg: var(--ticker-0-fg); }
+.ds-ticker-badge--1 { --tb-bg: var(--ticker-1-bg); --tb-fg: var(--ticker-1-fg); }
+.ds-ticker-badge--2 { --tb-bg: var(--ticker-2-bg); --tb-fg: var(--ticker-2-fg); }
+.ds-ticker-badge--3 { --tb-bg: var(--ticker-3-bg); --tb-fg: var(--ticker-3-fg); }
+.ds-ticker-badge--4 { --tb-bg: var(--ticker-4-bg); --tb-fg: var(--ticker-4-fg); }
+.ds-ticker-badge--5 { --tb-bg: var(--ticker-5-bg); --tb-fg: var(--ticker-5-fg); }
+.ds-ticker-badge--6 { --tb-bg: var(--ticker-6-bg); --tb-fg: var(--ticker-6-fg); }
+.ds-ticker-badge--7 { --tb-bg: var(--ticker-7-bg); --tb-fg: var(--ticker-7-fg); }
+
+/* Trade Reflection entry: badge beside the title / subtitle block. */
+.jnl-editor-ident {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-3);
+    min-width: 0;
+}
+.jnl-editor-ident > div { min-width: 0; }
+.jnl-editor-badge { display: inline-flex; flex: none; }
+.jnl-editor-badge:empty { display: none; }
+
+/* Symbols Best / Worst cards: badge on the ticker line. */
+.ds-ticker-line {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+    min-width: 0;
+    margin-bottom: 2px;
+}
+.ds-ticker-line > .snap-kpi-value {
+    margin-bottom: 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
