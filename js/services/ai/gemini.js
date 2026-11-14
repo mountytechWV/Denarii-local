@@ -348,9 +348,10 @@
             var names = [];
             var pageToken = '';
             for (var page = 0; page < 10; page++) {
-                var url = LIST_MODELS_URL + '?pageSize=1000&key=' + encodeURIComponent(key) +
+                // The key goes in a header so it never appears in the request URL.
+                var url = LIST_MODELS_URL + '?pageSize=1000' +
                     (pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : '');
-                var res = await fetch(url);
+                var res = await fetch(url, { headers: { 'x-goog-api-key': key } });
                 if (!res.ok) return [];
                 var data = await res.json();
                 (data.models || []).forEach(function (m) {
@@ -692,7 +693,8 @@
     // rejects the thinking setting, the same request is sent once more
     // without thinkingConfig.
     async function _callDirect(opts) {
-        var endpoint = BASE_URL + opts.model + ':generateContent?key=' + opts.apiKey;
+        // The key goes in a header so it never appears in the request URL.
+        var endpoint = BASE_URL + opts.model + ':generateContent';
         var timeoutMs = opts.timeoutMs || TIMEOUT_MS;
         var bodyStr = opts.bodyStr;
         var canRetry = !!(opts.geminiBody && opts.geminiBody.generationConfig && opts.geminiBody.generationConfig.thinkingConfig);
@@ -706,7 +708,7 @@
             try {
                 var res = await fetch(endpoint, {
                     method:  'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': opts.apiKey },
                     body:    bodyStr,
                     signal:  controller ? controller.signal : undefined
                 });

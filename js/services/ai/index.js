@@ -215,10 +215,17 @@
     // Dev test page helpers
     // ─────────────────────────────────────────────────────────────────────────
 
+    // The dev AI test page is off unless config.js turns it on.
+    function _aiTestPageEnabled() {
+        var cfg = global.DENARII_CONFIG;
+        return !!(cfg && cfg.ENABLE_AI_TEST_PAGE);
+    }
+
     /**
      * Called by the AI test page submit button.
      */
     async function runTestQuery() {
+        if (!_aiTestPageEnabled()) return;
         var promptEl  = document.getElementById('ai-test-prompt');
         var outputEl  = document.getElementById('ai-test-output');
         var errorEl   = document.getElementById('ai-test-error');
@@ -298,7 +305,12 @@
             _refreshKeyStatus();
 
             if (window.location.hash === '#ai-test') {
-                try { activateSection('ai-test'); } catch (e) { /* Denarii.js not ready yet */ }
+                if (_aiTestPageEnabled()) {
+                    try { activateSection('ai-test'); } catch (e) { /* Denarii.js not ready yet */ }
+                } else {
+                    try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch (e) { /* ignore */ }
+                    try { activateSection('dashboard'); } catch (e) { /* Denarii.js not ready yet */ }
+                }
             }
         });
 

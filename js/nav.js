@@ -266,11 +266,14 @@
         flyout.classList.add('visible');
 
         // Bind clicks on flyout items
-        flyout.querySelectorAll('.sidebar-flyout-item').forEach(function (btn) {
+        flyout.querySelectorAll('.sidebar-flyout-item').forEach(function (btn, i) {
             btn.addEventListener('click', function () {
                 var tab = btn.dataset.flyoutTab;
                 if (tab && typeof activateSection === 'function') {
                     activateSection(tab);
+                    // Run the sidebar item's own inline handler too, as a click on
+                    // it would (Tags Management: switchSettingsTab('settings-tags')).
+                    if (typeof children[i].onclick === 'function') children[i].onclick();
                     setTimeout(refreshGroupActiveStates, 30);
                 }
                 closeSidebarFlyout();

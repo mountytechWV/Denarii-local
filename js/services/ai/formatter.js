@@ -278,7 +278,8 @@
         const summary = _buildAnalytics(trades);
 
         const activeFilters = {};
-        if (request.accountFilter  && request.accountFilter  !== 'all') activeFilters.account   = request.accountFilter;
+        // The account id is never sent to the AI provider, only that one account is selected.
+        if (request.accountFilter  && request.accountFilter  !== 'all') activeFilters.singleAccount = true;
         if (request.dateRange)                                            activeFilters.dateRange  = request.dateRange;
         if (request.instrumentType && request.instrumentType !== 'all')  activeFilters.instrument = request.instrumentType;
         if (request.strategyFilter && request.strategyFilter !== 'all')  activeFilters.strategy  = request.strategyFilter === NO_STRATEGY ? 'No Strategy' : request.strategyFilter;
