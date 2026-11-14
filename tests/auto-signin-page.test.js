@@ -480,5 +480,5 @@ test('source: backup reminder works with a DEK-only session; Lock is unchanged',
     assert.match(extractFunction(AUTH, 'lockJournal'), /if \(!lastBackupTime \|\|/, 'Lock reminder depends only on lastBackupTime');
     assert.doesNotMatch(APP, /exported a backup in over a week/, 'no weekly close guard');
     assert.doesNotMatch(extractFunction(AUTH, '_completeLock'), /denariiAutoSignIn/);
-    assert.match(AUTH, /_startupAutoSignIn\(\);\n\}\);/, 'started from DOMContentLoaded');
+    assert.match(AUTH, /_startupAutoSignIn\(\);\r?\n\}\);/, 'started from DOMContentLoaded');
 });
