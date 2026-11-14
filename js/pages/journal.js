@@ -68,11 +68,13 @@
             // restore by matching element ids, sidestepping number/string issues.
             var rulesEl = document.getElementById('jnl-rules-list');
             var rules = [];
+            var answered = [];
             if (rulesEl) {
                 rulesEl.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
-                    if (!cb.checked) return;
                     var m = (cb.id || '').match(/^jnl-rule-(.+)$/);
-                    if (m) rules.push(m[1]);
+                    if (!m) return;
+                    if (!cb.hasAttribute('data-unanswered')) answered.push(m[1]);
+                    if (cb.checked) rules.push(m[1]);
                 });
             }
             // Core trade fields — snapshot whatever is currently in the DOM so
@@ -99,6 +101,7 @@
                 setup:      setupEl ? setupEl.value : '',
                 tags:       tags,
                 rules:      rules,
+                answered:   answered,
                 core:       core,
                 targets:    (typeof _getRowData === 'function')
                     ? _getRowData('jnl-plan-rows', 'target-price', 'target-qty') : [],
@@ -364,7 +367,7 @@
         }
 
         if (_jnlSelectedStrategy && !stayOpen) {
-            trade.strategyScore = calculateStrategyScore(_jnlSelectedStrategy, _jnlFollowedRules, trade.pnl);
+            trade.strategyScore = _jnlRuleScore(trade.pnl);
         }
 
         trade.tradeGrade = document.getElementById('jnl-trade-grade').value;
@@ -861,14 +864,22 @@
         var _draftNotes = _draft ? (_draft.notes != null ? _draft.notes : _draft.content) : null;
         // A restored draft holds unsaved edits; otherwise nothing is edited yet.
         _jnlDirty = !!(_draft && _draft.ts > (trade.notesUpdatedAt || 0));
+        var _draftSetup = null;   // the draft's strategy, when it was restored
         if (_draft && _draft.ts > (trade.notesUpdatedAt || 0)) {
             if (typeof _draftNotes === 'string' && _draftNotes !== (notesContent || '')) {
                 _jnlSetNotes(_draftNotes);
             }
             if (typeof _draft.grade === 'string') _jnlSetGrade(_draft.grade);
+            // A draft saved before a rename follows it; a name no longer in the
+            // list (deleted, or a stale rename) keeps the trade's own strategy.
             if (typeof _draft.setup === 'string') {
                 var _ss = document.getElementById('jnl-setup-type');
-                if (_ss) _ss.value = _draft.setup;
+                var _dSetup = (_draft.setup && DenariiFilters.currentStrategyName)
+                    ? DenariiFilters.currentStrategyName(_draft.setup) : _draft.setup;
+                if (_ss && Array.prototype.some.call(_ss.options, function(o) { return o.value === _dSetup; })) {
+                    _ss.value = _dSetup;
+                    _draftSetup = _dSetup;
+                }
             }
             if (Array.isArray(_draft.tags) && _draft.tags.length) {
                 var _tc = document.getElementById('jnl-tag-rows');
@@ -976,15 +987,14 @@
         // Strategy rules checklist — honor draft's setup + rule state if newer.
         document.getElementById('jnl-strategy-rules-checklist').style.display = 'none';
         var _draftActive = _draft && _draft.ts > (trade.notesUpdatedAt || 0);
-        var _effSetup = (_draftActive && typeof _draft.setup === 'string' && _draft.setup)
-            ? _draft.setup
-            : trade.setupType;
+        var _effSetup = _draftSetup ? _draftSetup : trade.setupType;
         if (_effSetup) {
             _jnlLoadStrategyRules(_effSetup, trade.strategyScore);
             // If the draft has rule checkbox state, override the freshly-rendered
             // checkboxes (which reflect trade.strategyScore) with the draft state,
             // then recompute score so display + _jnlFollowedRules stay consistent.
-            if (_draftActive && Array.isArray(_draft.rules)) {
+            // Not when the draft's strategy was dropped: its rules belong to it.
+            if (_draftActive && Array.isArray(_draft.rules) && (_draftSetup || !_draft.setup)) {
                 var _rulesListEl = document.getElementById('jnl-rules-list');
                 if (_rulesListEl) {
                     _rulesListEl.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
@@ -992,7 +1002,10 @@
                     });
                     _draft.rules.forEach(function(rid) {
                         var cb = document.getElementById('jnl-rule-' + rid);
-                        if (cb) cb.checked = true;
+                        if (cb) { cb.checked = true; _jnlMarkRuleAnswered(cb); }
+                    });
+                    (Array.isArray(_draft.answered) ? _draft.answered : []).forEach(function(rid) {
+                        _jnlMarkRuleAnswered(document.getElementById('jnl-rule-' + rid));
                     });
                     if (typeof _jnlUpdateRuleScore === 'function') _jnlUpdateRuleScore();
                 }
@@ -2013,14 +2026,20 @@
     // ── Strategy rules checklist ───────────────────────────────────────────────
 
     var _jnlFollowedRules = [];
+    var _jnlAnsweredRules = [];
     var _jnlSelectedStrategy = null;
+    // The trade's saved score for the shown strategy; its answers for rules
+    // not on screen are kept when the trade saves.
+    var _jnlPrevScore = null;
 
     function _jnlLoadStrategyRules(strategyName, existingScore) {
         var checklist = document.getElementById('jnl-strategy-rules-checklist');
         if (!strategyName) {
             if (checklist) checklist.style.display = 'none';
             _jnlSelectedStrategy = null;
+            _jnlPrevScore = null;
             _jnlFollowedRules = [];
+            _jnlAnsweredRules = [];
             return;
         }
         var strategy = (journalData.strategies || []).find(function(s) { return s.name === strategyName; });
@@ -2029,50 +2048,67 @@
             return;
         }
 
-        _jnlSelectedStrategy = strategy;
-        _jnlFollowedRules = existingScore ? (existingScore.followedRules || []) : [];
-
         var trade = journalData.trades.find(function(t) { return t.id === window._jnlSelectedTradeId; });
         var tradePnL = trade ? trade.pnl : 0;
         var outcome = tradePnL > 0 ? 'winner' : tradePnL < 0 ? 'loser' : 'breakeven';
 
+        // Switching back to the trade's own strategy shows its saved answers again.
+        if (!existingScore && trade && trade.strategyScore &&
+            String(trade.strategyScore.strategyId) === String(strategy.id)) existingScore = trade.strategyScore;
+        var saved = existingScore ? _ruleChecklistView(strategy, existingScore) : null;
+
+        _jnlSelectedStrategy = strategy;
+        _jnlPrevScore = saved ? existingScore : null;
+        _jnlFollowedRules = saved ? (existingScore.followedRules || []) : [];
+
         document.getElementById('jnl-rules-list').innerHTML =
-            renderGroupedChecklist(strategy, outcome, _jnlFollowedRules, 'jnl-rule-', '_jnlUpdateRuleScore');
+            renderGroupedChecklist(strategy, outcome, _jnlFollowedRules, 'jnl-rule-', '_jnlUpdateRuleScore', saved);
 
         if (checklist) checklist.style.display = 'block';
         _jnlUpdateRuleScore();
     }
 
-    function _jnlUpdateRuleScore() {
+    // A ticked or unticked rule counts as answered from then on.
+    function _jnlMarkRuleAnswered(cb) {
+        if (!cb || !cb.hasAttribute('data-unanswered')) return;
+        cb.removeAttribute('data-unanswered');
+        var tag = cb.parentNode && cb.parentNode.querySelector('.rule-unanswered');
+        if (tag) tag.remove();
+    }
+
+    function _jnlUpdateRuleScore(changedCb) {
         if (!_jnlSelectedStrategy) return;
+        _jnlMarkRuleAnswered(changedCb);
         var trade = journalData.trades.find(function(t) { return t.id === window._jnlSelectedTradeId; });
         var tradePnL = trade ? trade.pnl : 0;
         var outcome = tradePnL > 0 ? 'winner' : tradePnL < 0 ? 'loser' : 'breakeven';
         var allRules = _jnlSelectedStrategy.groups.flatMap(function(g) { return g.rules; });
-        var scored = allRules.filter(function(r) { return (r.showWhen === 'always' || r.showWhen === outcome) && r.stars > 0; });
+        var shown = allRules.filter(function(r) { return r.showWhen === 'always' || r.showWhen === outcome; });
 
         _jnlFollowedRules = [];
-        var actualScore = 0, allMandatoryFollowed = true;
-        scored.forEach(function(rule) {
+        _jnlAnsweredRules = [];
+        shown.forEach(function(rule) {
             var cb = document.getElementById('jnl-rule-' + rule.id);
-            if (cb && cb.checked) {
-                _jnlFollowedRules.push(rule.id);
-                actualScore += _effectiveStars(rule);
-            } else if (rule.isMandatory) {
-                allMandatoryFollowed = false;
-            }
+            if (!cb) return;
+            if (cb.checked && rule.stars > 0) _jnlFollowedRules.push(rule.id);
+            if (!cb.hasAttribute('data-unanswered')) _jnlAnsweredRules.push(rule.id);
         });
 
-        var maxScore = scored.reduce(function(s, r) { return s + _effectiveStars(r); }, 0);
-        var percentage = maxScore > 0 ? (actualScore / maxScore * 100) : 0;
-        var grade = calculateGradeWithMandatory(percentage, allMandatoryFollowed);
+        var score = _jnlRuleScore(tradePnL);
+        var grade = calculateGradeWithMandatory(score.percentage, score.allMandatoryFollowed);
         var scoreEl = document.getElementById('jnl-strategy-score');
         if (scoreEl) {
             scoreEl.innerHTML =
                 '<span class="grade-badge grade-' + grade.class + '">' + grade.letter + '</span>' +
-                '<span style="margin-left:8px;color:var(--text-secondary);">' + actualScore + '/' + maxScore + ' points (' + percentage.toFixed(0) + '%)</span>' +
-                (!allMandatoryFollowed ? '<br><span style="color:var(--danger);font-size:12px;">Mandatory rule(s) not followed</span>' : '');
+                '<span style="margin-left:8px;color:var(--text-secondary);">' + score.actualScore + '/' + score.maxScore + ' points (' + score.percentage.toFixed(0) + '%)</span>' +
+                (!score.allMandatoryFollowed ? '<br><span style="color:var(--danger);font-size:12px;">Mandatory rule(s) not followed</span>' : '');
         }
+    }
+
+    // The score the trade saves: rules on screen as shown, saved answers kept.
+    function _jnlRuleScore(pnl) {
+        return calculateStrategyScore(_jnlSelectedStrategy, _jnlFollowedRules, pnl,
+            { answered: _jnlAnsweredRules, prev: _jnlPrevScore });
     }
 
     // ── Trade list pagination navigation ─────────────────────────────────────

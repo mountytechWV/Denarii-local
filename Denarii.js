@@ -1059,47 +1059,77 @@
             return { letter: 'F', class: 'f' };
         }
 
-        // Calculate strategy score based on trade outcome (winner/loser/breakeven)
-        function calculateStrategyScore(strategy, followedRuleIds, tradePnL) {
+        // Calculate strategy score based on trade outcome (winner/loser/breakeven).
+        // opts.answered: ids the user answered (omitted = every applicable rule).
+        // opts.prev: the trade's saved strategyScore. Its answers for rules not
+        // on screen (removed, or for another outcome) are kept, never dropped.
+        function calculateStrategyScore(strategy, followedRuleIds, tradePnL, opts) {
+            opts = opts || {};
             const tradeOutcome = tradePnL > 0 ? 'winner' : tradePnL < 0 ? 'loser' : 'breakeven';
-            
-            // Get all rules and filter by outcome
-            const allRules = strategy.groups.flatMap(g => g.rules);
-            const applicableRules = allRules.filter(r => 
-                r.showWhen === 'always' || r.showWhen === tradeOutcome
-            );
-            const scoredRules = applicableRules.filter(r => r.stars > 0);
-            const mandatoryRules = scoredRules.filter(r => r.isMandatory);
-            
-            // Calculate max score from applicable rules (mandatory rules are worth 6 = stored 5 + 1 bonus)
-            const maxScore = scoredRules.reduce((sum, r) => sum + _effectiveStars(r), 0);
+            const followed = new Set(followedRuleIds.map(String));
+            const answered = opts.answered ? new Set(opts.answered.map(String)) : null;
+            const applies = r => r.showWhen === 'always' || r.showWhen === tradeOutcome;
 
-            // Calculate actual score
+            // One entry per applicable rule, then the saved entries not on screen
+            const rules = [];
+            const onScreen = new Set();
+            strategy.groups.forEach(g => (g.rules || []).forEach(r => {
+                if (!applies(r)) return;
+                const id = String(r.id);
+                const isFollowed = followed.has(id);
+                onScreen.add(id);
+                rules.push({
+                    id: r.id, text: r.text, groupName: g.name || '', stars: r.stars,
+                    isMandatory: !!r.isMandatory, showWhen: r.showWhen,
+                    followed: isFollowed, answered: isFollowed || !answered || answered.has(id)
+                });
+            }));
+            _strategyScorePrevRules(strategy, opts.prev).forEach(e => {
+                if (!onScreen.has(String(e.id))) rules.push(e);
+            });
+
+            // Answered rules for this outcome count (mandatory rules are worth 6 = stored 5 + 1 bonus);
+            // a retired rule counts with its saved stars, an unknown one not at all
+            let maxScore = 0;
             let actualScore = 0;
             let allMandatoryFollowed = true;
-
-            scoredRules.forEach(rule => {
-                if (followedRuleIds.includes(rule.id)) {
-                    actualScore += _effectiveStars(rule);
-                } else if (rule.isMandatory) {
-                    allMandatoryFollowed = false;
-                    // missed mandatory earns 0 — no subtraction penalty
-                }
+            rules.forEach(e => {
+                if (!e.answered || !(e.stars > 0) || !applies(e)) return;
+                maxScore += _effectiveStars(e);
+                if (e.followed) actualScore += _effectiveStars(e);
+                else if (e.isMandatory) allMandatoryFollowed = false; // missed mandatory earns 0 — no subtraction penalty
             });
-            
+
             const percentage = maxScore > 0 ? (actualScore / maxScore * 100) : 0;
             const grade = calculateGradeWithMandatory(percentage, allMandatoryFollowed);
-            
+
             return {
                 strategyId: strategy.id,
                 strategyName: strategy.name,
-                followedRules: [...followedRuleIds],
+                followedRules: rules.filter(e => e.followed).map(e => e.id),
                 actualScore,
                 maxScore,
                 percentage,
                 grade: grade.letter,
-                allMandatoryFollowed
+                allMandatoryFollowed,
+                rules
             };
+        }
+
+        // The saved answers of a score for this strategy. A score saved before
+        // snapshots has only followedRules: ids still in the strategy take the
+        // current rule, the others are kept as an unknown removed rule.
+        function _strategyScorePrevRules(strategy, prev) {
+            if (!prev || String(prev.strategyId) !== String(strategy.id)) return [];
+            if (Array.isArray(prev.rules)) return prev.rules;
+            const current = {};
+            strategy.groups.forEach(g => (g.rules || []).forEach(r => { current[String(r.id)] = { rule: r, groupName: g.name || '' }; }));
+            return (prev.followedRules || []).map(id => {
+                const c = current[String(id)];
+                if (!c) return { id, text: 'Unknown (rule removed)', groupName: '', stars: null, isMandatory: false, showWhen: 'always', followed: true, answered: true };
+                return { id: c.rule.id, text: c.rule.text, groupName: c.groupName, stars: c.rule.stars, isMandatory: !!c.rule.isMandatory,
+                    showWhen: c.rule.showWhen, followed: true, answered: true };
+            });
         }
 
         function selectStrategyColor(color) {
@@ -1209,10 +1239,12 @@
          * @param {number[]} followedRules - array of followed rule IDs
          * @param {string}   idPrefix      - DOM id prefix ('edit-rule-', 'jnl-rule-')
          * @param {string}   onchangeFn    - global function name to call on checkbox change
+         * @param {Object}   [saved]       - the trade's saved answers (_ruleChecklistView)
          * @returns {string} HTML string
          */
-        function renderGroupedChecklist(strategy, outcome, followedRules, idPrefix, onchangeFn) {
+        function renderGroupedChecklist(strategy, outcome, followedRules, idPrefix, onchangeFn, saved) {
             var html = '';
+            var ticked = followedRules.map(String);
             strategy.groups.forEach(function(group) {
                 var rules = (group.rules || []).filter(function(r) {
                     return r.showWhen === 'always' || r.showWhen === outcome;
@@ -1224,20 +1256,63 @@
                     var isMandatory = rule.isMandatory || false;
                     var starDisplay = isMandatory ? '★★★★★★' : getStarDisplay(rule.stars);
                     var isNote = rule.stars === 0;
-                    var isChecked = followedRules.includes(rule.id);
+                    var isChecked = ticked.indexOf(String(rule.id)) !== -1;
+                    var unanswered = !!(saved && !isChecked && saved.unanswered[String(rule.id)]);
+                    var oldText = saved && saved.oldText[String(rule.id)];
                     html += '<div class="rule-checklist-item' + (isNote ? ' note' : '') + '">' +
-                        '<input type="checkbox" id="' + idPrefix + rule.id + '" onchange="' + onchangeFn + '()"' +
-                        (isChecked ? ' checked' : '') + (isNote ? ' data-note="true"' : '') + '>' +
+                        '<input type="checkbox" id="' + idPrefix + rule.id + '" onchange="' + onchangeFn + '(this)"' +
+                        (isChecked ? ' checked' : '') + (isNote ? ' data-note="true"' : '') +
+                        (unanswered ? ' data-unanswered="true"' : '') + '>' +
                         '<label for="' + idPrefix + rule.id + '">' +
                             escapeHtml(rule.text) +
                             (isNote ? ' <em>(note only)</em>' : '') +
                             (isMandatory ? ' <strong>(MANDATORY)</strong>' : '') +
                             (!isNote ? ' <span class="rule-stars">' + starDisplay + '</span>' : '') +
-                        '</label></div>';
+                            (unanswered ? ' <em class="rule-unanswered">(unanswered)</em>' : '') +
+                        '</label>' +
+                        (oldText ? '<div class="rule-old-text" style="font-size:11px;color:var(--text-secondary);margin-left:24px;">Answered as: ' + escapeHtml(oldText) + '</div>' : '') +
+                        '</div>';
                 });
                 html += '</div>';
             });
+            if (saved && saved.retired.length) {
+                html += '<div class="rule-checklist-group rule-checklist-retired">';
+                html += '<div class="rule-checklist-group-header">Retired</div>';
+                saved.retired.forEach(function(e) {
+                    html += '<div class="rule-checklist-item">' +
+                        '<input type="checkbox" disabled' + (e.followed ? ' checked' : '') + '>' +
+                        '<label>' + escapeHtml(e.text || '') +
+                            ' <em>(' + (!e.answered ? 'unanswered' : e.followed ? 'followed' : 'not followed') + ')</em>' +
+                        '</label></div>';
+                });
+                html += '</div>';
+            }
             return html;
+        }
+
+        // What a trade's saved score says about each rule of its strategy:
+        // ids with no saved answer, saved wording that has since changed, and
+        // saved rules the strategy no longer has. Null when the score has no
+        // answers for this strategy (a new answer: every shown rule counts).
+        function _ruleChecklistView(strategy, score) {
+            var prev = _strategyScorePrevRules(strategy, score);
+            if (!score || String(score.strategyId) !== String(strategy.id)) return null;
+            var saved = {};
+            prev.forEach(function(e) { saved[String(e.id)] = e; });
+            var view = { unanswered: {}, oldText: {}, retired: [], answers: saved };
+            var current = {};
+            strategy.groups.forEach(function(g) {
+                (g.rules || []).forEach(function(r) {
+                    var id = String(r.id);
+                    current[id] = true;
+                    var e = saved[id];
+                    // Only a snapshot knows which rules were asked
+                    if (Array.isArray(score.rules) && (!e || !e.answered)) view.unanswered[id] = true;
+                    if (e && e.answered && e.text && e.text !== r.text) view.oldText[id] = e.text;
+                });
+            });
+            prev.forEach(function(e) { if (!current[String(e.id)]) view.retired.push(e); });
+            return view;
         }
 
         // ── Strategy Editor: two-panel rendering ─────────────────
@@ -3672,9 +3747,17 @@
             var tm = isOpen ? {} : _computeTradeMetrics(entryPrice, exitPrice, quantity, tradeType, commissionFees, profitTargets, stopLosses, assetType);
 
             // Skip strategy scoring for open trades — pnl is not yet known
+            // Only the "Always" rules are shown here; the others stay unanswered.
             var strategyScore = null;
             if (!isOpen && selectedStrategyForTrade) {
-                strategyScore = calculateStrategyScore(selectedStrategyForTrade, followedRules, pnl);
+                var _ntPrev = existingId
+                    ? (journalData.trades || []).find(function(t) { return String(t.id) === String(existingId); })
+                    : null;
+                strategyScore = calculateStrategyScore(selectedStrategyForTrade, followedRules, pnl, {
+                    answered: selectedStrategyForTrade.groups.flatMap(function(g) { return g.rules || []; })
+                        .filter(function(r) { return r.showWhen === 'always'; }).map(function(r) { return r.id; }),
+                    prev: _ntPrev ? _ntPrev.strategyScore : null
+                });
             }
 
             // Multi-fill mode

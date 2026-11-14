@@ -1180,10 +1180,23 @@
                 });
             });
         });
-        if (Object.keys(_stratRuleMap).length > 0) {
+        // A trade with a rule snapshot counts its answered, unfollowed mandatory
+        // rules as saved (a removed rule keeps its saved wording).
+        var _snapRuleText = {};
+        {
             var violCounts = {};
             trades.forEach(function(t) {
                 if (!t.strategyScore || t.strategyScore.allMandatoryFollowed) return;
+                if (Array.isArray(t.strategyScore.rules)) {
+                    var snapOutcome = t.pnl > 0 ? 'winner' : t.pnl < 0 ? 'loser' : 'breakeven';
+                    t.strategyScore.rules.forEach(function(e) {
+                        if (!e.isMandatory || !e.answered || e.followed) return;
+                        if (e.showWhen !== 'always' && e.showWhen !== snapOutcome) return;
+                        violCounts[e.id] = (violCounts[e.id] || 0) + 1;
+                        if (e.text) _snapRuleText[e.id] = e.text;
+                    });
+                    return;
+                }
                 var strat = jdStrats.find(function(s) { return s.name === t.setupType; });
                 if (!strat || !strat.groups) return;
                 strat.groups.forEach(function(g) {
@@ -1201,8 +1214,9 @@
             Object.keys(violCounts).forEach(function(rid) {
                 if (!topViolId || violCounts[rid] > violCounts[topViolId]) topViolId = rid;
             });
-            if (topViolId && _stratRuleMap[topViolId]) {
-                var ruleText = _stratRuleMap[topViolId].text;
+            var _violText = topViolId && (_stratRuleMap[topViolId] ? _stratRuleMap[topViolId].text : _snapRuleText[topViolId]);
+            if (_violText) {
+                var ruleText = _violText;
                 freqViolation = ruleText.length > 40 ? ruleText.slice(0, 37) + '...' : ruleText;
             }
         }
