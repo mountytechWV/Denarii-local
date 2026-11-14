@@ -51,7 +51,6 @@
         if (!tradeId) return;
         try {
             var notesEl = document.getElementById('jnl-notes');
-            var quickEl = document.getElementById('jnl-quick-notes');
             var gradeEl = document.getElementById('jnl-trade-grade');
             var setupEl = document.getElementById('jnl-setup-type');
             var tagRowsEl = document.getElementById('jnl-tag-rows');
@@ -96,7 +95,6 @@
             var snap = {
                 content:    notesEl ? notesEl.innerHTML : '', // legacy notes field (back-compat)
                 notes:      notesEl ? notesEl.innerHTML : '',
-                quickNotes: quickEl ? quickEl.value : '',
                 grade:      gradeEl ? gradeEl.value : '',
                 setup:      setupEl ? setupEl.value : '',
                 tags:       tags,
@@ -372,7 +370,6 @@
         trade.tradeGrade = document.getElementById('jnl-trade-grade').value;
         trade.tags       = _jnlGetTagsFromRows();
         trade.notes      = _jnlGetNotes();
-        trade.quickNotes = document.getElementById('jnl-quick-notes').value;
 
         // Only explicit Save Journal Entry ends the journaling session
         // (clearing sessionHeaderDate). Autosave preserves session continuity
@@ -841,9 +838,6 @@
         // Planning rows (combined target + stop)
         _rehydratePlanRows('jnl-plan-rows', trade.profitTargets, trade.stopLosses);
 
-        // Quick Notes
-        document.getElementById('jnl-quick-notes').value = trade.quickNotes || '';
-
         // Journal fields
         _jnlSetGrade(trade.tradeGrade || '');
         _jnlInitTagRows(trade.tags);
@@ -861,7 +855,7 @@
         // Restore unsaved draft if newer than the last persisted save for this
         // trade. notesUpdatedAt is bumped by the form submit; absence means any
         // stored draft is newer than "never saved". When newer, apply the full
-        // snapshot across all protected fields (notes, quick notes, grade,
+        // snapshot across all protected fields (notes, grade,
         // setup, tags, profit targets, stop losses).
         var _draft = _jnlLoadDraft(trade.id);
         var _draftNotes = _draft ? (_draft.notes != null ? _draft.notes : _draft.content) : null;
@@ -870,10 +864,6 @@
         if (_draft && _draft.ts > (trade.notesUpdatedAt || 0)) {
             if (typeof _draftNotes === 'string' && _draftNotes !== (notesContent || '')) {
                 _jnlSetNotes(_draftNotes);
-            }
-            if (typeof _draft.quickNotes === 'string') {
-                var _qn = document.getElementById('jnl-quick-notes');
-                if (_qn) _qn.value = _draft.quickNotes;
             }
             if (typeof _draft.grade === 'string') _jnlSetGrade(_draft.grade);
             if (typeof _draft.setup === 'string') {
@@ -932,10 +922,10 @@
             });
             _notesEl.addEventListener('blur', _jnlFlushCommit);
         }
-        // Other protected fields: Quick Notes, Trade Grade (hidden input),
+        // Other protected fields: Trade Grade (hidden input),
         // Strategy select, and the dynamic tag / target / stop row containers.
         // Use event delegation on containers to cover dynamically added rows.
-        ['jnl-quick-notes', 'jnl-trade-grade', 'jnl-setup-type',
+        ['jnl-trade-grade', 'jnl-setup-type',
          'jnl-tag-rows', 'jnl-profit-target-rows', 'jnl-stop-loss-rows',
          'jnl-grade-pills',
          // Core trade fields (covered by draft protection):

@@ -153,10 +153,10 @@ test('reflection: reflection text saved on an open trade keeps it open', async (
     assert.equal(s.holdSeconds, null);
 });
 
-test('reflection: typed notes autosave on an open trade keeps it open', async () => {
+test('reflection: typed edit autosave on an open trade keeps it open', async () => {
     const h = jnlHarness(openTrade());
-    h.$('jnl-quick-notes').value = 'note';
-    h.fire('jnl-quick-notes', 'input');
+    h.$('jnl-trade-grade').value = 'B';
+    h.fire('jnl-trade-grade', 'input');
     await h.fns._jnlFlushCommit();
     assert.equal(h.saves.length, 1);
     assert.equal(h.saves[0].pnl, null);
@@ -283,7 +283,6 @@ function ntHarness(fields) {
         'entry-price': '1', 'exit-price': '', quantity: '1', 'trade-type': 'long',
         'commission-fees': '', 'entry-time': '2026-10-24T17:45', 'exit-time': '2026-10-24T17:46',
         'asset-type': 'stock', symbol: 'zztesth', 'trade-broker-account': '', 'setup-type': '',
-        'quick-notes': '',
     };
     Object.entries(Object.assign(base, fields)).forEach(([id, v]) => { document.getElementById(id).value = v; });
     // _roundTradeForSave (Batch B) is a no-op here: WebullSync is not loaded.

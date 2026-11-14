@@ -482,31 +482,6 @@ function _buildDemoBrokerData() {
         'Afternoon trades after a green morning are my biggest leak. Fix this.'
     ];
 
-    var QUICK_W = [
-        'Clean execution. Followed the plan.','Good entry, hit target. Disciplined exit.',
-        'Solid setup. Let the trade work.','Patience paid off. Good read on the level.',
-        'A+ entry and exit. This is the process.','Trailed the stop and let it run.',
-        'Pre-market prep identified this level perfectly.','Waited for confirmation. Got rewarded.',
-        'Clean risk/reward. Textbook execution.','Entered on the retest. Exited at resistance.',
-        'Best trade of the day. Clean from start to finish.','Let the winner run. No interference.',
-        'Sized right, timed right. Process working.','Simple setup, simple execution.',
-        'Caught the move early and managed it well.','Volume confirmed. No hesitation on entry.',
-        'Stuck to the plan even when it felt slow.','Partial at target, trail the rest. Textbook.',
-        'Read the tape correctly. Clean decision.','This is what consistency looks like.'
-    ];
-    var QUICK_L = [
-        'Chased the entry. Got punished.','Setup was marginal. Should have passed.',
-        'Stopped out. Respected the plan.','Broke the rules. Paid for it.',
-        'Entered without a clear trigger.','Sized too big for this setup quality.',
-        'Fought the trend. Lost.','Emotional entry after earlier loss.',
-        'Wide stop got hit. Acceptable loss.','No edge here. Just noise.',
-        'Revenge trade. Should have walked away.','FOMO entry. Not in the playbook.',
-        'Afternoon slop trade. Should have been done.','Ignored the red flags on the tape.',
-        'Late entry, poor fill, bad outcome.','This setup works 60% of the time. This was the 40%.',
-        'Loss is part of the process. Move on.','Over-managed the trade. Let it breathe.',
-        'Setup was fine, execution was poor.','Market environment was wrong for this play.'
-    ];
-
     // Win tag combos
     var WIN_TAGS = [
         ['A+ Entry','Honored Stop'],['Scaled In Well','Confident'],
@@ -658,7 +633,6 @@ function _buildDemoBrokerData() {
         var entryReason = '';
         var exitReason = '';
         var lessons = '';
-        var quickNotes = '';
         if (rng() < 0.75) {
             entryReason = isWin ? ENTRY_W[h % ENTRY_W.length] : ENTRY_L[h % ENTRY_L.length];
             exitReason = isWin ? EXIT_W[h % EXIT_W.length] : EXIT_L[h % EXIT_L.length];
@@ -667,9 +641,7 @@ function _buildDemoBrokerData() {
                   + '<p><strong>Exit:</strong> ' + exitReason + '</p>'
                   + '<p><strong>Lesson:</strong> ' + lessons + '</p>';
         }
-        if (rng() < 0.65) {
-            quickNotes = isWin ? QUICK_W[h % QUICK_W.length] : QUICK_L[h % QUICK_L.length];
-        }
+        rng();   // unused draw, kept so later demo values don't shift
 
         // ── Drawdown / runup ──
         var movePerShare = Math.abs(exitPrice - entryPrice);
@@ -720,7 +692,6 @@ function _buildDemoBrokerData() {
             exitReason: exitReason,
             lessons: lessons,
             notes: notes,
-            quickNotes: quickNotes,
             profitTargets: profitTargets,
             stopLosses: stopLosses,
             commissionFees: commissionFees,

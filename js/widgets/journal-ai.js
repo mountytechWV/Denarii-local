@@ -129,13 +129,12 @@
         var pnl = trade.pnl || 0;
         var outcome = pnl > 0 ? 'Winner' : pnl < 0 ? 'Loser' : 'Break Even';
         var notes = stripHtml(trade.notes);
-        var quickNotes = (trade.quickNotes || '').trim();
         var entryReason = (trade.entryReason || '').trim();
         var exitReason = (trade.exitReason || '').trim();
         var lessons = (trade.lessons || '').trim();
 
         // Check if there's enough journal content
-        var contentLen = notes.length + quickNotes.length + entryReason.length + exitReason.length + lessons.length;
+        var contentLen = notes.length + entryReason.length + exitReason.length + lessons.length;
         if (contentLen < 20) return 'NOT_ENOUGH_CONTENT';
 
         var lines = [
@@ -151,7 +150,6 @@
                 trade.strategyScore.maxScore + ' (' + trade.strategyScore.grade + ')');
         }
 
-        if (quickNotes) lines.push('Quick Notes: ' + truncate(quickNotes, 200));
         if (entryReason) lines.push('Entry Reason: ' + truncate(entryReason, 200));
         if (exitReason) lines.push('Exit Reason: ' + truncate(exitReason, 200));
         if (lessons) lines.push('Lesson: ' + truncate(lessons, 200));

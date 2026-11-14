@@ -3,7 +3,7 @@
 //  3.   Reflection list Side reads type or direction; losing P&L has a minus;
 //       open trades show "Open" (Exit) and a dash (P&L).
 //  4/5. Header side for cloud rows; close-trade hint under Save Reflection.
-//  6.   Quick Notes editable and saved only after a real edit.
+//  6.   Quick Notes UI removed; a saved trade.quickNotes is kept as stored.
 //  7.   Account column before P&L, sortable, display name.
 //  Also: a cloud-loaded short (direction only) opens as Short and a price
 //  edit recalculates P&L as a short.
@@ -244,42 +244,42 @@ test('reflection: price edit on a cloud short recalculates P&L as a short', asyn
 
 // ── 6. Quick Notes ──────────────────────────────────────────────────────────
 
-test('reflection: Quick Notes load, and a view/click/flush makes no save', async () => {
+test('reflection: a view/flush makes no save', async () => {
     const h = jnlHarness([cloudShort()], cloudShort().id);
-    assert.equal(h.$('jnl-quick-notes').value, 'qn1');
-    h.fire('jnl-quick-notes', 'click');
     await h.fns._jnlFlushCommit();
     assert.equal(h.saves.length, 0);
 });
 
-test('reflection: typed Quick Notes edit saves quickNotes', async () => {
+// The Quick Notes field is gone, but a trade that already has quickNotes keeps
+// it through every Reflection save, and a trade without it never gains it.
+test('reflection: saves keep an existing quickNotes untouched', async () => {
     const h = jnlHarness([cloudShort()], cloudShort().id);
-    h.$('jnl-quick-notes').value = 'qn2';
-    h.fire('jnl-quick-notes', 'input');
+    h.$('jnl-notes').innerHTML = '<p>new reflection</p>';
+    assert.equal(await h.fns._jnlCommitTrade({ explicit: true }), true);
+    h.$('jnl-trade-grade').value = 'A';
+    h.fire('jnl-trade-grade', 'input');
+    await h.fns._jnlFlushCommit();
+    assert.equal(h.saves.length, 2);
+    for (const s of h.saves) assert.equal(s.quickNotes, 'qn1');
+    assert.equal(h.saves[0].notes, '<p>new reflection</p>');
+    assert.equal(h.saves[1].pnl, -1);    // execution fields untouched
+});
+
+test('reflection: saves never add quickNotes to a trade without it', async () => {
+    const t = cloudShort();
+    delete t.quickNotes;
+    const h = jnlHarness([t], t.id);
+    h.$('jnl-trade-grade').value = 'B';
+    h.fire('jnl-trade-grade', 'input');
     await h.fns._jnlFlushCommit();
     assert.equal(h.saves.length, 1);
-    assert.equal(h.saves[0].quickNotes, 'qn2');
-    assert.equal(h.saves[0].pnl, -1);    // execution fields untouched
+    assert.equal('quickNotes' in h.saves[0], false);
 });
 
-test('reflection: Quick Notes edit on an open trade keeps it open', async () => {
-    const t = { id: 5, symbol: 'ZZTESTK', type: 'long', quantity: 1, entryPrice: 1, exitPrice: null,
-        entryTime: '2026-10-25T14:00:00.000Z', exitTime: null, pnl: null, commissionFees: 0, notes: '' };
-    const h = jnlHarness([t], 5);
-    h.$('jnl-quick-notes').value = 'note';
-    h.fire('jnl-quick-notes', 'input');
-    await h.fns._jnlFlushCommit();
-    assert.equal(h.saves[0].quickNotes, 'note');
-    assert.equal(h.saves[0].pnl, null);
-    assert.equal(h.saves[0].exitPrice, null);
-});
-
-test('index.html: Quick Notes is editable with the new label and placeholder', () => {
-    const m = HTML.match(/<textarea id="jnl-quick-notes"[^>]*>/);
-    assert.ok(m);
-    assert.doesNotMatch(m[0], /readonly/);
-    assert.match(m[0], /placeholder="Add quick notes\.\.\."/);
-    assert.ok(!HTML.includes('(captured at entry)'));
+test('Quick Notes UI gone; the page code never reads or writes it', () => {
+    assert.ok(!/quick[-_ ]?notes/i.test(HTML));
+    assert.ok(!/quick[-_ ]?notes/i.test(JNL));
+    assert.ok(!/quick[-_ ]?notes/i.test(APP));
 });
 
 // ── 5. Close-trade hint under Save Reflection ───────────────────────────────

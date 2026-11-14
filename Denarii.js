@@ -3559,7 +3559,7 @@
             var ids = [
                 'trade-broker-account','asset-type','symbol','trade-type',
                 'quantity','entry-price','exit-price','entry-time','exit-time',
-                'commission-fees','setup-type','quick-notes',
+                'commission-fees','setup-type',
                 'option-action','option-type-input','strike-input','expiry-input'
             ];
             var core = {};
@@ -3705,7 +3705,6 @@
                 expiry:          assetType === 'option' ? (document.getElementById('expiry-input').value || null) : null,
                 setupType:       document.getElementById('setup-type').value,
                 strategyScore:   strategyScore,
-                quickNotes:      document.getElementById('quick-notes').value,
                 source:          'manual',
                 commissionFees:  commissionFees,
                 profitTargets:   profitTargets,

@@ -625,15 +625,15 @@ test('reopen: a draft whose totals disagree with the saved fills shows the saved
     assert.equal(String(h.$('jnl-commission-fees').value), '0.66');
     assert.equal(h.$('jnl-entry-time').value, '2026-10-20T14:30');
     assert.equal(h.notes(), '<p>draft note</p>');
-    assert.equal(h.$('jnl-quick-notes').value, 'qn');
     assert.equal(h.g._jnlDirty, true);
 });
 
 test('reopen + save: totals saved match the fills, notes from the draft are saved', async () => {
     const t = filledTrade();
-    const h = reopenHarness(t, staleDraft());
+    const h = reopenHarness(t, staleDraft());   // older draft still carries quickNotes: 'qn'
     assert.equal(await h.fns._jnlCommitTrade({ explicit: true }), true);
     const s = h.saves[0];
+    assert.equal('quickNotes' in s, false);     // an old draft's Quick Notes are ignored
     assert.equal(s.quantity, 20);
     assert.equal(s.entryPrice, 10.05);
     assert.equal(s.exitPrice, 11);
