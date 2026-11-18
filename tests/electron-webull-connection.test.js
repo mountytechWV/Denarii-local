@@ -113,7 +113,7 @@ test('token statuses map: PENDING, NORMAL, EXPIRED, INVALID and anything else', 
   await env.conn.connect('a1', { appKey: APP_KEY, appSecret: APP_SECRET });
 
   let r = await env.conn.checkApproval('a1');
-  assert.deepEqual(r, { ok: true, approvalState: 'needs_approval', accounts: [], message: MESSAGES.pending });
+  assert.deepEqual(r, { ok: true, approvalState: 'needs_approval', reason: 'pending', accounts: [], message: MESSAGES.pending });
 
   env.clock.advance(10000);
   env.fetch.state.tokenStatus = 'NORMAL';
@@ -127,7 +127,7 @@ test('token statuses map: PENDING, NORMAL, EXPIRED, INVALID and anything else', 
     env.store.updateConnection('a1', { token: await env.safeStorage.encryptStringAsync(JSON.stringify({ v: 1, accountId: 'a1', token: 'x' })) });
     env.fetch.state.tokenStatus = dead;
     r = await env.conn.checkApproval('a1');
-    assert.deepEqual(r, { ok: true, approvalState: 'needs_approval', accounts: [], message: 'Your Webull approval expired. Tap Send new code.' });
+    assert.deepEqual(r, { ok: true, approvalState: 'needs_approval', reason: 'expired', accounts: [], message: 'Your Webull approval expired. Tap Re-approve Webull.' });
     assert.equal(env.store.getConnection('a1').token, null, dead + ' drops the token');
   }
 
@@ -164,6 +164,40 @@ test('Account List 401 and 403 map to "expired" and "can\'t read accounts"', asy
   env.clock.advance(10000);
   env.fetch.state.fail['/trading/accounts/list'] = 503;
   assert.equal((await env.conn.checkApproval('a1')).error, 'Webull is unavailable.');
+});
+
+test('checkApproval reason: pending, expired (no token, EXPIRED, INVALID, Account List 401), none when ok or failed', async (t) => {
+  const env = setup(t);
+  await env.conn.connect('a1', { appKey: APP_KEY, appSecret: APP_SECRET });
+  const freshToken = async () => env.store.updateConnection('a1', {
+    token: await env.safeStorage.encryptStringAsync(JSON.stringify({ v: 1, accountId: 'a1', token: 'x' })),
+  });
+  const check = async () => { env.clock.advance(10000); return env.conn.checkApproval('a1'); };
+
+  assert.equal((await env.conn.checkApproval('a1')).reason, 'pending');
+
+  for (const dead of ['EXPIRED', 'INVALID']) {
+    await freshToken();
+    env.fetch.state.tokenStatus = dead;
+    assert.equal((await check()).reason, 'expired', dead);
+  }
+  // Token dropped by the last step: no Webull call.
+  assert.equal((await check()).reason, 'expired', 'no token');
+
+  await freshToken();
+  env.fetch.state.tokenStatus = 'NORMAL';
+  env.fetch.state.fail['/trading/accounts/list'] = 401;
+  assert.equal((await check()).reason, 'expired', 'Account List 401');
+
+  env.fetch.state.fail = {};
+  const ok = await check();
+  assert.equal(ok.approvalState, 'ok');
+  assert.equal('reason' in ok, false);
+
+  env.fetch.state.tokenStatus = 'SOMETHING_NEW';
+  const failed = await check();
+  assert.equal(failed.ok, false);
+  assert.equal('reason' in failed, false);
 });
 
 test('a blob moved to another account\'s row is rejected', async (t) => {

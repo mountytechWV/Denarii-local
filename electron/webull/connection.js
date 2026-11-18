@@ -12,7 +12,7 @@
 // never returns the key, secret or token.
 //
 // Cooldowns are in-memory timestamps: Check again every 10 s, a new code
-// (connect or Send new code) every 60 s.
+// (connect or Re-approve Webull) every 60 s.
 //
 // No electron import: safeStorage, the store, fetch and the clock are passed
 // in, so tests/electron-webull-connection.test.js runs it under node --test.
@@ -165,7 +165,9 @@ function createConnection(opts) {
     },
 
     // At most two Webull calls: Check Token, plus Account List on NORMAL.
-    // -> { ok: true, approvalState, accounts?, message? } | { ok: false, error, retryAfterSec? }
+    // -> { ok: true, approvalState, reason?, accounts?, message? } | { ok: false, error, retryAfterSec? }
+    // needs_approval replies carry reason: 'pending' (keep waiting) or
+    // 'expired' (the token is gone; a new code is needed).
     checkApproval(accountId) {
       return serial(async () => {
         const row = store.getConnection(accountId);
@@ -176,7 +178,7 @@ function createConnection(opts) {
         lastCheckAt.set(accountId, now);
         store.updateConnection(accountId, { tokenCheckedAt: now });
 
-        if (!row.token) return ok({ approvalState: 'needs_approval', accounts: [], message: MESSAGES.expired });
+        if (!row.token) return ok({ approvalState: 'needs_approval', reason: 'expired', accounts: [], message: MESSAGES.expired });
 
         let creds, tok;
         try {
@@ -198,12 +200,12 @@ function createConnection(opts) {
 
         if (tokenStatus === 'PENDING') {
           store.updateConnection(accountId, { approvalState: 'needs_approval' });
-          return ok({ approvalState: 'needs_approval', accounts: [], message: MESSAGES.pending });
+          return ok({ approvalState: 'needs_approval', reason: 'pending', accounts: [], message: MESSAGES.pending });
         }
         if (tokenStatus === 'EXPIRED' || tokenStatus === 'INVALID') {
           // The token is dead: drop it so the next step is a new code.
           store.updateConnection(accountId, { approvalState: 'needs_approval', token: null, tokenExpiresAt: null });
-          return ok({ approvalState: 'needs_approval', accounts: [], message: MESSAGES.expired });
+          return ok({ approvalState: 'needs_approval', reason: 'expired', accounts: [], message: MESSAGES.expired });
         }
         if (tokenStatus !== 'NORMAL') {
           store.updateConnection(accountId, { approvalState: 'unknown' });
@@ -217,7 +219,7 @@ function createConnection(opts) {
           const status = err && err.status;
           if (status === 401) {
             store.updateConnection(accountId, { approvalState: 'needs_approval' });
-            return ok({ approvalState: 'needs_approval', accounts: [], message: MESSAGES.expired });
+            return ok({ approvalState: 'needs_approval', reason: 'expired', accounts: [], message: MESSAGES.expired });
           }
           if (status === 403) store.updateConnection(accountId, { approvalState: 'unknown' });
           return mapWebullError(err, null, fail(MESSAGES.cantReadAccounts));

@@ -747,6 +747,7 @@
 
             // Webull (local): apply batches from main for this account; Lock stops it.
             if (typeof WebullSync !== 'undefined' && WebullSync.startBatchHandler) WebullSync.startBatchHandler(currentAccountId);
+            if (window.denariiWebull) setTimeout(_wbMaybePromptReapprove, 3000);
 
             // ── Phase 3: Non-blocking backfill after UI render ──────────────
             // Skip if Phase 2A migration already promoted to cloud_primary
@@ -761,6 +762,26 @@
                     _startBackfillIfNeeded(journalData);
                 }
             }, 3000);
+        }
+
+        // Once per session: if Webull is connected but not approved, offer
+        // to re-approve. One status() call; any failure just skips the
+        // prompt. Waits (up to ~30 s) for another open dialog to close.
+        const WB_REAPPROVE_PROMPT_KEY = 'denarii_wbReapprovePrompted';
+        async function _wbMaybePromptReapprove() {
+            try {
+                if (sessionStorage.getItem(WB_REAPPROVE_PROMPT_KEY) === '1') return;
+                const wb = window.denariiWebull;
+                if (!wb || typeof wb.status !== 'function') return;
+                const s = await wb.status();
+                if (!s || !s.connected || s.approvalState === 'ok') return;
+                for (let i = 0; i < 15 && document.querySelector('.modal.active'); i++) {
+                    await new Promise(r => setTimeout(r, 2000));
+                }
+                if (document.querySelector('.modal.active')) return;
+                sessionStorage.setItem(WB_REAPPROVE_PROMPT_KEY, '1');
+                openModal('webull-reapprove-modal');
+            } catch (e) { /* storage blocked or status failed: no prompt */ }
         }
 
         // Batch D3: redraw after a cloud re-sync or a resolved conflict

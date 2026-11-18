@@ -425,7 +425,7 @@ test('Settings: connect sends key, secret and date, then clears the secret field
     assert.ok(!h.html().includes('SECRET-456'));
     assert.match(h.html(), /Webull connected · key ••••AB12/);
     assert.match(h.html(), /I've approved it, check again/);
-    assert.match(h.html(), /Send new code/);
+    assert.match(h.html(), /onclick="reapproveWebull\(\)">Re-approve Webull</);
     assert.match(h.html(), /Also revoke the App Key in Webull's developer portal if you no longer use it\./);
 });
 
@@ -471,8 +471,8 @@ test('Settings: Sync now starts a run; progress and error events render', async 
     const emit = ev => h.wb.listeners.forEach(cb => cb(ev));
     emit(progressEvent);
     assert.ok(h.html().includes(PROGRESS_TEXT));
-    status = okStatus([Object.assign({}, link, { progress: null, status: 'needs_approval', error: 'Your Webull approval expired. Tap Send new code.' })]);
-    emit({ kind: 'journal', journalId: J1, status: 'needs_approval', error: 'Your Webull approval expired. Tap Send new code.' });
+    status = okStatus([Object.assign({}, link, { progress: null, status: 'needs_approval', error: 'Your Webull approval expired. Tap Re-approve Webull.' })]);
+    emit({ kind: 'journal', journalId: J1, status: 'needs_approval', error: 'Your Webull approval expired. Tap Re-approve Webull.' });
     emit({ kind: 'run', running: false });
     await new Promise(r => setImmediate(r));
     assert.ok(!h.html().includes(PROGRESS_TEXT));
@@ -787,4 +787,269 @@ test('Broker: a review action calls resolveReview, shows its message and refresh
     await h._wbReviewAction('import', 'g');
     assert.deepEqual(calls[1][2], { groupId: 'g' });
     assert.match(h.html(), /alert-danger[^>]*>These fills leave 5 open/);
+});
+
+// ── Re-approve Webull (Settings → Integrations) ─────────────────────────────
+
+// Timers run only when the test advances the fake clock.
+function fakeTimers() {
+    let now = Date.UTC(2026, 10, 18, 15, 0, 0);
+    let seq = 0;
+    const q = new Map();
+    const flush = () => new Promise(r => setImmediate(r));
+    return {
+        now: () => now,
+        setTimeout: (fn, ms) => { const id = ++seq; q.set(id, { fn, at: now + (ms || 0) }); return id; },
+        clearTimeout: id => { q.delete(id); },
+        async advance(ms) {
+            const end = now + ms;
+            for (;;) {
+                let next = null;
+                for (const [id, t] of q) if (t.at <= end && (next === null || t.at < q.get(next).at)) next = id;
+                if (next === null) break;
+                const t = q.get(next);
+                q.delete(next);
+                now = t.at;
+                await t.fn();
+                await flush();
+            }
+            now = end;
+            await flush();
+        },
+    };
+}
+
+const NEEDS = okStatus([], { approvalState: 'needs_approval', accounts: [] });
+const PENDING = { ok: true, approvalState: 'needs_approval', reason: 'pending', accounts: [], message: 'Approve Denarii in the Webull app, then tap Check again.' };
+const SENT = { ok: true, approvalState: 'needs_approval', message: 'x' };
+
+// checks: checkApproval answers in order (the last one repeats).
+function reapproveHarness(checks, extra) {
+    const timers = fakeTimers();
+    const els = {};
+    const panel = fakeEl('settings-integrations', { classList: { contains: c => c === 'active' }, appendChild(el) { els[el.id] = el; } });
+    els['settings-integrations'] = panel;
+    const document = { getElementById: id => els[id] || null, createElement: () => fakeEl('') };
+    let status = NEEDS;
+    let i = 0;
+    const wb = fakeWebull(Object.assign({
+        status: () => status,
+        resendCode: SENT,
+        checkApproval: () => checks[Math.min(i++, checks.length - 1)],
+        disconnect: { ok: true },
+    }, extra));
+    const flags = { refreshed: 0 };
+    const window = { denariiWebull: wb, confirm: () => true, refreshBrokerWebullFlags: () => { flags.refreshed++; } };
+    class FakeDate extends Date { static now() { return timers.now(); } }
+    const fns = new Function('document', 'window', 'escapeHtml', 'WebullSync', 'journalData', 'setTimeout', 'clearTimeout', 'Date',
+        between(settingsSrc, '// ── Webull (Settings → Integrations) ──', '// ── Tags Management ──') +
+        '\nreturn { webullUi, loadWebullSection, reapproveWebull, checkWebullApproval, disconnectWebull };')(
+        document, window, escapeHtml, engine, { brokerAccounts: [] }, timers.setTimeout, timers.clearTimeout, FakeDate);
+    const count = m => wb.calls.filter(c => c[0] === m).length;
+    return Object.assign({ timers, wb, flags, count, setStatus: s => { status = s; },
+        html: () => (els['settings-webull'] || {}).innerHTML || '' }, fns);
+}
+
+test('Re-approve: sends a new request, shows the steps, checks every 11 s while pending', async () => {
+    const h = reapproveHarness([PENDING]);
+    await h.loadWebullSection();
+    assert.match(h.html(), /Tap Re-approve Webull\./);
+    await h.reapproveWebull();
+    assert.equal(h.count('resendCode'), 1);
+    assert.equal(h.webullUi.polling, true);
+    assert.match(h.html(), /alert-info[^>]*>Webull sent a new approval request\. Approve Denarii in the Webull app within 5 minutes\./);
+    assert.match(h.html(), /onclick="checkWebullApproval\(\)" disabled>/);   // manual check waits while polling
+    await h.timers.advance(10999);
+    assert.equal(h.count('checkApproval'), 0);
+    await h.timers.advance(1);
+    assert.equal(h.count('checkApproval'), 1);
+    await h.timers.advance(11000);
+    assert.equal(h.count('checkApproval'), 2);
+    assert.match(h.html(), /Webull sent a new approval request/);              // pending keeps the steps
+    assert.equal(h.webullUi.polling, true);
+});
+
+test('Re-approve: approved stops polling, reloads status and refreshes the broker cards', async () => {
+    const h = reapproveHarness([PENDING, { ok: true, approvalState: 'ok', accounts: [{ id: 'acct-9', label: 'Margin' }] }]);
+    await h.loadWebullSection();
+    await h.reapproveWebull();
+    h.setStatus(okStatus([]));
+    const before = h.count('status');
+    await h.timers.advance(22000);
+    assert.equal(h.count('checkApproval'), 2);
+    assert.equal(h.webullUi.polling, false);
+    assert.equal(h.count('status'), before + 1);
+    assert.equal(h.flags.refreshed, 1);
+    assert.match(h.html(), /Webull approval expires /);
+    await h.timers.advance(60000);
+    assert.equal(h.count('checkApproval'), 2);
+});
+
+test('Re-approve: an expired reply stops polling with the expired message', async () => {
+    const h = reapproveHarness([{ ok: true, approvalState: 'needs_approval', reason: 'expired', accounts: [], message: 'm' }]);
+    await h.loadWebullSection();
+    await h.reapproveWebull();
+    await h.timers.advance(11000);
+    assert.equal(h.webullUi.polling, false);
+    assert.match(h.html(), /alert-warning[^>]*>Your Webull approval expired\. Tap Re-approve Webull to send a new request\./);
+    await h.timers.advance(60000);
+    assert.equal(h.count('checkApproval'), 1);
+});
+
+test('Re-approve: "already approved" reloads status (from the check or from the new request)', async () => {
+    const h = reapproveHarness([{ ok: false, error: 'Webull is already approved.' }]);
+    await h.loadWebullSection();
+    await h.reapproveWebull();
+    const before = h.count('status');
+    await h.timers.advance(11000);
+    assert.equal(h.webullUi.polling, false);
+    assert.equal(h.count('status'), before + 1);
+
+    const r = reapproveHarness([PENDING], { resendCode: { ok: false, error: 'Webull is already approved.' } });
+    await r.loadWebullSection();
+    r.setStatus(okStatus([]));
+    await r.reapproveWebull();
+    await new Promise(res => setImmediate(res));
+    assert.equal(r.webullUi.polling, false);
+    assert.equal(r.count('status'), 2);
+    assert.ok(!r.html().includes('alert-danger'));
+});
+
+test('Re-approve: another error stops polling and shows it', async () => {
+    const h = reapproveHarness([PENDING, { ok: false, error: 'Webull is unavailable.' }]);
+    await h.loadWebullSection();
+    await h.reapproveWebull();
+    await h.timers.advance(22000);
+    assert.equal(h.webullUi.polling, false);
+    assert.match(h.html(), /alert-danger[^>]*>Webull is unavailable\.</);
+    await h.timers.advance(60000);
+    assert.equal(h.count('checkApproval'), 2);
+});
+
+test('Re-approve: a cooldown reply waits retryAfterSec before the next check', async () => {
+    const h = reapproveHarness([{ ok: false, error: 'Please wait a moment before trying again.', retryAfterSec: 30 }, PENDING]);
+    await h.loadWebullSection();
+    await h.reapproveWebull();
+    await h.timers.advance(11000);
+    assert.equal(h.count('checkApproval'), 1);
+    assert.equal(h.webullUi.polling, true);
+    await h.timers.advance(30000);
+    assert.equal(h.count('checkApproval'), 1);   // 30.5 s, not 11 s
+    await h.timers.advance(500);
+    assert.equal(h.count('checkApproval'), 2);
+});
+
+test('Re-approve: stops after 5 minutes with the timeout message', async () => {
+    const h = reapproveHarness([PENDING]);
+    await h.loadWebullSection();
+    await h.reapproveWebull();
+    await h.timers.advance(5 * 60 * 1000 + 11000);
+    assert.equal(h.webullUi.polling, false);
+    assert.ok(h.count('checkApproval') <= 28, String(h.count('checkApproval')));
+    assert.match(h.html(), /alert-warning[^>]*>Webull didn't confirm within 5 minutes\./);
+    const n = h.count('checkApproval');
+    await h.timers.advance(60000);
+    assert.equal(h.count('checkApproval'), n);
+});
+
+test('Re-approve: Disconnect stops polling', async () => {
+    const h = reapproveHarness([PENDING]);
+    await h.loadWebullSection();
+    await h.reapproveWebull();
+    await h.disconnectWebull();
+    assert.equal(h.webullUi.polling, false);
+    await h.timers.advance(60000);
+    assert.equal(h.count('checkApproval'), 0);
+    assert.match(h.html(), /id="settings-webull-start"/);
+});
+
+test('manual check: an expired reason shows the Re-approve message', async () => {
+    const h = reapproveHarness([{ ok: true, approvalState: 'needs_approval', reason: 'expired', accounts: [], message: 'm' }]);
+    await h.loadWebullSection();
+    await h.checkWebullApproval();
+    assert.match(h.html(), /Tap Re-approve Webull to send a new request\./);
+    assert.equal(h.webullUi.polling, false);
+});
+
+// ── Re-approval reminder after sign-in (Denarii.js) ─────────────────────────
+
+function promptHarness(status, opts) {
+    opts = opts || {};
+    const store = Object.assign({}, opts.session);
+    const sessionStorage = { getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); } };
+    let openTries = opts.openFor || 0;
+    const calls = { status: 0, opened: [], waits: 0 };
+    const window = { denariiWebull: { status: async () => { calls.status++; if (status instanceof Error) throw status; return status; } } };
+    const document = { querySelector: sel => (sel === '.modal.active' && openTries > 0 ? {} : null) };
+    const setTimeout = fn => { calls.waits++; openTries--; fn(); };
+    const fn = new Function('sessionStorage', 'window', 'document', 'openModal', 'setTimeout',
+        /const WB_REAPPROVE_PROMPT_KEY = [^;]+;/.exec(dSrc)[0] + '\n' +
+        'async ' + extractFunction(dSrc, '_wbMaybePromptReapprove') + '\nreturn _wbMaybePromptReapprove;')(
+        sessionStorage, window, document, id => calls.opened.push(id), setTimeout);
+    return { run: fn, calls, store };
+}
+
+test('reminder: connected but not approved opens the dialog once per session', async () => {
+    const h = promptHarness(NEEDS);
+    await h.run();
+    assert.deepEqual(h.calls.opened, ['webull-reapprove-modal']);
+    await h.run();
+    assert.deepEqual(h.calls.opened, ['webull-reapprove-modal']);
+    assert.equal(h.calls.status, 1);                    // second run never asks main
+});
+
+test('reminder: nothing when approved, not connected, or status fails', async () => {
+    for (const s of [okStatus([]), { connected: false }, { ok: false, error: 'x' }, new Error('ipc')]) {
+        const h = promptHarness(s);
+        await h.run();
+        assert.deepEqual(h.calls.opened, []);
+        assert.deepEqual(h.store, {});
+    }
+});
+
+test('reminder: waits for an open dialog to close; gives up after ~30 s without using the session flag', async () => {
+    const h = promptHarness(NEEDS, { openFor: 3 });
+    await h.run();
+    assert.equal(h.calls.waits, 3);
+    assert.deepEqual(h.calls.opened, ['webull-reapprove-modal']);
+
+    const busy = promptHarness(NEEDS, { openFor: 100 });
+    await busy.run();
+    assert.equal(busy.calls.waits, 15);
+    assert.deepEqual(busy.calls.opened, []);
+    assert.deepEqual(busy.store, {});
+});
+
+test('reminder: wired after sign-in; dialog sits outside #app-container with Re-approve now / Later', () => {
+    const unlock = extractFunction(dSrc, 'unlockApp');
+    assert.ok(unlock.includes('if (window.denariiWebull) setTimeout(_wbMaybePromptReapprove, 3000);'));
+    const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+    const i = html.indexOf('<div id="webull-reapprove-modal" class="modal">');
+    assert.ok(i > 0 && i < html.indexOf('<div id="app-container"'));
+    assert.ok(html.includes('onclick="webullPromptReapprove()">Re-approve now</button>'));
+    assert.ok(html.includes('onclick="closeModal(\'webull-reapprove-modal\')">Later</button>'));
+    assert.ok(settingsSrc.includes('window.webullPromptReapprove   = webullPromptReapprove;'));
+});
+
+// ── Broker account: status follows the current connection ───────────────────
+
+test('Broker: approval needed overrides an older OK; approved overrides an older needs_approval', async () => {
+    const needs = baHarness({ status: okStatus([savedLink()], { approvalState: 'needs_approval' }) });
+    await needs.open(J1);
+    assert.match(needs.html(), /id="ba-wb-status">Needs approval</);
+    assert.match(needs.html(), /alert-warning[^>]*>Webull needs re-approval\. Go to Settings → Integrations and tap Re-approve Webull\./);
+
+    const stale = baHarness({ status: okStatus([savedLink({ status: 'needs_approval', error: 'Your Webull approval expired. Tap Re-approve Webull.' })]) });
+    await stale.open(J1);
+    assert.match(stale.html(), /id="ba-wb-status">Approved, ready to sync</);
+    assert.ok(!stale.html().includes('Webull needs re-approval'));
+    assert.ok(!stale.html().includes('Your Webull approval expired'));
+
+    const ok = baHarness({ status: okStatus([savedLink()]) });
+    await ok.open(J1);
+    assert.match(ok.html(), /id="ba-wb-status">OK</);
+});
+
+test('Broker: refreshBrokerWebullFlags forces a card check (skips the 30 s wait)', () => {
+    assert.ok(baSrc.includes('window.refreshBrokerWebullFlags       = () => _wbRefreshCardFlags(true);'));
 });

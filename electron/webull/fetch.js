@@ -22,7 +22,7 @@ const MESSAGES = Object.freeze({
   rejected: 'Webull rejected the credentials.',
   rejectedReconnect: 'Webull rejected the credentials. Reconnect with a new key.',
   pending: 'Approve Denarii in the Webull app, then tap Check again.',
-  expired: 'Your Webull approval expired. Tap Send new code.',
+  expired: 'Your Webull approval expired. Tap Re-approve Webull.',
   cantReadAccounts: "Your Webull key can't read accounts. Check that Trading is enabled.",
   codeSent: 'Enter the code Webull texted you in the Webull app, then tap Check again.',
   notConnected: 'Webull is not connected.',

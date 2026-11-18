@@ -301,6 +301,17 @@
         </div>
     </div>
 
+    <div id="webull-reapprove-modal" class="modal">
+        <div class="modal-content">
+            <h2>Webull needs re-approval</h2>
+            <p class="modal-desc">Your Webull approval expired or is waiting. Webull sync is paused until you re-approve.</p>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="webullPromptReapprove()">Re-approve now</button>
+                <button class="btn btn-secondary" onclick="closeModal('webull-reapprove-modal')">Later</button>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Broker Import Modal -->
     <div id="broker-import-modal" class="modal">
@@ -2290,7 +2301,7 @@
                             <p>When it's connected you'll see <strong>"Webull connected"</strong> with the last 4 characters of your key, your Webull accounts, and the date your approval expires.</p>
                             <p>Your key and secret are stored encrypted on this computer only and are <strong>never shown again</strong> after you connect.</p>
                             <h4>When Approval Expires</h4>
-                            <p>An approval lasts about <strong>15 days</strong>. The expiry date turns amber when it's within 3 days. When it expires, syncing pauses and the account shows <strong>"Needs approval"</strong>. To renew, click <strong>Send new code</strong>, approve in the Webull app, then click <strong>"I've approved it, check again"</strong>.</p>
+                            <p>An approval lasts about <strong>15 days</strong>. The expiry date turns amber when it's within 3 days. When it expires, syncing pauses, the account shows <strong>"Needs approval"</strong>, and Denarii offers to re-approve once after you sign in. To renew, click <strong>Re-approve Webull</strong> on the Integrations tab. This sends a new approval request to the Webull app; approve Denarii there within 5 minutes. Denarii checks automatically and clears the notice when Webull confirms. You can also click <strong>"I've approved it, check again"</strong> yourself.</p>
                             <h4>Disconnect</h4>
                             <p>Click <strong>Disconnect</strong> on the Integrations tab. Trades you already imported stay as they are. Also revoke the App Key in Webull's developer portal, because removing it from Denarii does not invalidate it at Webull.</p>
                         </section>
@@ -2767,7 +2778,7 @@ Analyze this trader's data and identify their top 3 behavioral patterns negative
     <script src="js/shared/prompt-modal.js?v=2" defer></script>
     <script src="js/shared/filter-bar.js?v=7" defer></script>
     <script src="js/shared/ticker-badge.js?v=1" defer></script>
-    <script src="Denarii.js?v=84" defer></script>
+    <script src="Denarii.js?v=85" defer></script>
     <script src="js/services/webull-sync.js?v=6" defer></script>
     <script src="js/legal-bundle.js" defer></script>
     <script src="js/auth.js?v=48" defer></script>
@@ -2814,10 +2825,10 @@ Analyze this trader's data and identify their top 3 behavioral patterns negative
     <script src="js/pages/discipline.js?v=8" defer></script>
     <script src="js/pages/analytics-helpers.js?v=3" defer></script>
     <script src="js/pages/stock-chart.js?v=4" defer></script>
-    <script src="js/pages/settings.js?v=13" defer></script>
+    <script src="js/pages/settings.js?v=14" defer></script>
     <script src="js/shared/editor-toolbar.js?v=1" defer></script>
     <script src="js/pages/journal.js?v=29" defer></script>
-    <script src="js/pages/broker-accounts.js?v=21" defer></script>
+    <script src="js/pages/broker-accounts.js?v=22" defer></script>
     <script src="js/pages/reviews.js?v=9" defer></script>
     <script src="js/pages/daily-planner.js?v=6" defer></script>
     <script src="js/pages/weekly-planner.js?v=7" defer></script>

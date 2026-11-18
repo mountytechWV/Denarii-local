@@ -986,7 +986,7 @@
     // link itself never touches trades; only the Needs review actions do,
     // through WebullSync.resolveReview.
 
-    const WB_APPROVE_MSG  = 'Webull needs re-approval. Go to Settings → Integrations to approve again.';
+    const WB_APPROVE_MSG  = 'Webull needs re-approval. Go to Settings → Integrations and tap Re-approve Webull.';
     const WB_CONNECT_MSG  = 'Connect Webull in Settings → Integrations to link this account.';
     const WB_LOAD_MSG     = 'Could not load the Webull link. Close and reopen this account to try again.';
     const WB_SAVE_MSG     = 'Could not save the Webull link. Try again.';
@@ -1251,9 +1251,13 @@
         return (progress && typeof WebullSync !== 'undefined' && typeof WebullSync.progressText === 'function') ? WebullSync.progressText(progress) : '';
     }
 
+    // The link's status is from its last sync; the connection's approval
+    // overrides it so it never reads "OK" beside the re-approval notice.
     function _wbStatusText(r) {
         const s = wbUi.status;
         if (!s || !s.connected) return 'Not connected';
+        if (s.approvalState !== 'ok') return 'Needs approval';
+        if (r && r.status === 'needs_approval') return 'Approved, ready to sync';
         return (r && WB_STATUS_LABELS[r.status]) || 'Never';
     }
 
@@ -1292,7 +1296,9 @@
         // Notices
         if (!connected) {
             html += '<div class="alert alert-info wb-alert">' + escapeHtml(WB_CONNECT_MSG) + '</div>';
-        } else if (needsApproval || (r && r.status === 'needs_approval')) {
+        } else if (needsApproval) {
+            // Connection level only: a link's needs_approval from an older
+            // sync stays until the next good sync, after re-approval too.
             html += '<div class="alert alert-warning wb-alert">' + escapeHtml(WB_APPROVE_MSG) + '</div>';
         }
 
@@ -2251,5 +2257,8 @@
 
     // Webull: Lock clears the card lines
     window._clearBrokerCardCache          = _clearBrokerCardCache;
+    // Settings → Integrations calls this after re-approval so the cards
+    // drop "Webull needs re-approval" without waiting out WB_CARD_TTL_MS.
+    window.refreshBrokerWebullFlags       = () => _wbRefreshCardFlags(true);
 
 })();

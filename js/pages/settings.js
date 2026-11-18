@@ -719,6 +719,15 @@
         const WEBULL_BUSY_MSG = 'A Webull sync is already running.';
         const WEBULL_NO_LINKS_MSG = 'Link a broker account to Webull in Settings → Broker Accounts to start importing.';
         const WEBULL_HISTORY_START = '2018-05-21';
+        const WEBULL_NEEDS_APPROVAL_MSG = 'Your Webull approval expired or is waiting. Tap Re-approve Webull.';
+        const WEBULL_REQUEST_SENT_MSG = 'Webull sent a new approval request. Approve Denarii in the Webull app within 5 minutes. Denarii checks automatically.';
+        const WEBULL_EXPIRED_MSG = 'Your Webull approval expired. Tap Re-approve Webull to send a new request.';
+        const WEBULL_TIMEOUT_MSG = "Webull didn't confirm within 5 minutes. Tap Re-approve Webull to send a new request.";
+        // Must match MESSAGES.alreadyApproved in electron/webull/fetch.js.
+        const WEBULL_ALREADY_APPROVED_ERR = 'Webull is already approved.';
+        // Main allows one check per 10 seconds; the request is good for 5 minutes.
+        const WEBULL_POLL_MS = 11000;
+        const WEBULL_POLL_LIMIT_MS = 5 * 60 * 1000;
 
         // Desktop only: the preload exposes window.denariiWebull.
         function webullUnavailable() {
@@ -727,10 +736,13 @@
 
         // status: last status() result ({connected:false} or the connected shape), null until loaded
         // busy: a call is in flight; running: main is syncing; cooldownUntil: per-action epoch ms
+        // polling: Re-approve is checking approval on its own; pollGen drops stale steps
         const webullUi = {
             status: null,
             busy: false,
             running: false,
+            polling: false,
+            pollGen: 0,
             msg: null,
             msgType: 'info',
             cooldownUntil: { connect: 0, check_approval: 0, resend_code: 0 },
@@ -851,7 +863,8 @@
             if (webullUnavailable() || !panel.classList.contains('active') || webullUi.busy) { renderWebullSection(); return; }
             webullListen();
             webullUi.busy = true;
-            webullSetMsg(null);
+            // Keep the request instructions while Re-approve is still checking.
+            if (!webullUi.polling) webullSetMsg(null);
             renderWebullSection();
             const res = await webullRequest('status');
             webullUi.busy = false;
@@ -952,14 +965,13 @@
                 } else {
                     // Steps shown until an action's own message replaces them.
                     if (!webullUi.msg) {
-                        html += '<div class="alert alert-warning wb-alert">' +
-                            escapeHtml('Your Webull approval has expired or is waiting. Tap "I\'ve approved it, check again". ' +
-                                'If it says the approval expired, tap "Send new code", enter the code in the Webull app, then tap "I\'ve approved it, check again".') +
-                            '</div>';
+                        html += '<div class="alert alert-warning wb-alert">' + escapeHtml(WEBULL_NEEDS_APPROVAL_MSG) + '</div>';
                     }
+                    // Polling checks on its own, so the manual check waits.
+                    const checkDis = webullUi.polling ? ' disabled' : dis('check_approval');
                     html += '<div class="settings-actions">' +
-                        '<button class="btn btn-primary" onclick="checkWebullApproval()"' + dis('check_approval') + '>I\'ve approved it, check again</button>' +
-                        '<button class="btn btn-secondary" onclick="resendWebullCode()"' + dis('resend_code') + '>Send new code</button>' +
+                        '<button class="btn btn-primary" onclick="reapproveWebull()"' + dis('resend_code') + '>Re-approve Webull</button>' +
+                        '<button class="btn btn-secondary" onclick="checkWebullApproval()"' + checkDis + '>I\'ve approved it, check again</button>' +
                         '<button class="btn btn-secondary" onclick="disconnectWebull()"' + dis() + '>Disconnect</button>' +
                         '</div>' + revokeNote;
                 }
@@ -1006,47 +1018,138 @@
             renderWebullSection();
         }
 
+        // Approved: reload status (checkApproval doesn't return the new
+        // expiry or links; status does) and clear the broker cards' notice.
+        function webullOnApproved(accounts) {
+            webullUi.status = Object.assign({}, webullUi.status, {
+                approvalState: 'ok',
+                accounts: Array.isArray(accounts) ? accounts : []
+            });
+            webullSetMsg(null);
+            renderWebullSection();
+            loadWebullSection();
+            if (typeof window.refreshBrokerWebullFlags === 'function') {
+                try { window.refreshBrokerWebullFlags(); } catch (e) { /* ignore */ }
+            }
+        }
+
         async function checkWebullApproval() {
-            if (webullUi.busy || webullCoolingDown('check_approval') || !webullUi.status || !webullUi.status.connected) return;
+            if (webullUi.busy || webullUi.polling || webullCoolingDown('check_approval') || !webullUi.status || !webullUi.status.connected) return;
             webullUi.busy = true;
             renderWebullSection();
             const res = await webullRequest('checkApproval');
             webullUi.busy = false;
+            if (res.ok && res.approvalState === 'ok') {
+                webullOnApproved(res.accounts);
+                return;
+            }
             if (res.ok && res.approvalState) {
-                webullUi.status = Object.assign({}, webullUi.status, {
-                    approvalState: res.approvalState,
-                    accounts: Array.isArray(res.accounts) ? res.accounts : []
-                });
-                if (res.approvalState === 'ok') webullSetMsg(null);
-                else webullSetMsg(res.message || WEBULL_DEFAULT_APPROVE_MSG, 'warning');
+                webullUi.status = Object.assign({}, webullUi.status, { approvalState: res.approvalState, accounts: [] });
+                webullSetMsg(res.reason === 'expired' ? WEBULL_EXPIRED_MSG : (res.message || WEBULL_DEFAULT_APPROVE_MSG), 'warning');
                 // Main allows one check per 10 seconds.
-                if (res.approvalState !== 'ok') webullSetCooldown('check_approval', Date.now() + 10000);
+                webullSetCooldown('check_approval', Date.now() + 10000);
             } else {
                 webullApplyRetryAfter('check_approval', res);
                 webullSetMsg(webullErrorText(res), 'danger');
             }
             renderWebullSection();
-            // checkApproval doesn't return the new expiry or links; status does.
-            if (res.ok && res.approvalState === 'ok') loadWebullSection();
         }
 
-        async function resendWebullCode() {
+        function webullStopPoll() {
+            webullUi.pollGen++;
+            webullUi.polling = false;
+            clearTimeout(webullUi.timers.poll);
+        }
+
+        // Checks approval every WEBULL_POLL_MS until approved, expired, an
+        // error, or WEBULL_POLL_LIMIT_MS. A cooldown reply waits it out.
+        function webullStartPoll() {
+            webullStopPoll();
+            const gen = webullUi.pollGen;
+            const deadline = Date.now() + WEBULL_POLL_LIMIT_MS;
+            webullUi.polling = true;
+            const step = async () => {
+                if (gen !== webullUi.pollGen) return;
+                if (Date.now() >= deadline) {
+                    webullStopPoll();
+                    webullSetMsg(WEBULL_TIMEOUT_MSG, 'warning');
+                    renderWebullSection();
+                    return;
+                }
+                if (webullUi.busy) { webullUi.timers.poll = setTimeout(step, 1000); return; }
+                webullUi.busy = true;
+                renderWebullSection();
+                const res = await webullRequest('checkApproval');
+                webullUi.busy = false;
+                if (gen !== webullUi.pollGen) { renderWebullSection(); return; }
+                let wait = WEBULL_POLL_MS;
+                if (res.ok && res.approvalState === 'ok') {
+                    webullStopPoll();
+                    webullOnApproved(res.accounts);
+                    return;
+                }
+                if (!res.ok && res.error === WEBULL_ALREADY_APPROVED_ERR) {
+                    webullStopPoll();
+                    loadWebullSection();
+                    return;
+                }
+                if (res.ok && res.reason === 'expired') {
+                    webullStopPoll();
+                    webullSetMsg(WEBULL_EXPIRED_MSG, 'warning');
+                } else if (res.ok) {
+                    // Still pending: keep the request instructions.
+                } else if (typeof res.retryAfterSec === 'number') {
+                    wait = Math.max(wait, res.retryAfterSec * 1000 + 500);
+                } else {
+                    webullStopPoll();
+                    webullSetMsg(webullErrorText(res), 'danger');
+                }
+                renderWebullSection();
+                if (gen === webullUi.pollGen) webullUi.timers.poll = setTimeout(step, wait);
+            };
+            webullUi.timers.poll = setTimeout(step, WEBULL_POLL_MS);
+        }
+
+        // Mints a new token (Webull sends a new approval request), then
+        // checks until approved.
+        async function reapproveWebull() {
             if (webullUi.busy || webullCoolingDown('resend_code') || !webullUi.status || !webullUi.status.connected) return;
+            webullStopPoll();
             webullUi.busy = true;
             renderWebullSection();
             const res = await webullRequest('resendCode');
             webullUi.busy = false;
             if (res.ok && res.approvalState) {
                 webullUi.status = Object.assign({}, webullUi.status, { approvalState: res.approvalState });
-                webullSetMsg(res.message || WEBULL_DEFAULT_APPROVE_MSG, 'info');
-                // Main allows one new code per 60 seconds and resets the check cooldown.
+                webullSetMsg(WEBULL_REQUEST_SENT_MSG, 'info');
+                // Main allows one new request per 60 seconds and resets the check cooldown.
                 webullSetCooldown('resend_code', Date.now() + 60000);
                 webullUi.cooldownUntil.check_approval = 0;
+                webullStartPoll();
+            } else if (!res.ok && res.error === WEBULL_ALREADY_APPROVED_ERR) {
+                loadWebullSection();
+                return;
             } else {
                 webullApplyRetryAfter('resend_code', res);
                 webullSetMsg(webullErrorText(res), 'danger');
             }
             renderWebullSection();
+        }
+
+        // From the post-sign-in re-approval prompt: open Integrations, bring
+        // the Webull section into view, and start Re-approve once the tab's
+        // own status load finishes (reapproveWebull ignores clicks while busy).
+        async function webullPromptReapprove() {
+            if (typeof closeModal === 'function') closeModal('webull-reapprove-modal');
+            openSettings();
+            switchSettingsTab('settings-integrations');
+            const el = webullPanel();
+            if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            for (let i = 0; i < 100 && webullUi.busy; i++) {
+                await new Promise(r => setTimeout(r, 100));
+            }
+            const s = webullUi.status;
+            if (!webullUi.busy && s && s.connected && s.approvalState !== 'ok') reapproveWebull();
         }
 
         async function syncWebullNow() {
@@ -1069,6 +1172,7 @@
         async function disconnectWebull() {
             if (webullUi.busy) return;
             if (!window.confirm('This permanently deletes your stored Webull keys from Denarii.')) return;
+            webullStopPoll();
             webullUi.busy = true;
             renderWebullSection();
             const res = await webullRequest('disconnect');
@@ -2095,7 +2199,8 @@
         window.removeTwelveDataApiKey  = removeTwelveDataApiKey;
         window.connectWebull           = connectWebull;
         window.checkWebullApproval     = checkWebullApproval;
-        window.resendWebullCode        = resendWebullCode;
+        window.reapproveWebull         = reapproveWebull;
+        window.webullPromptReapprove   = webullPromptReapprove;
         window.disconnectWebull        = disconnectWebull;
         window.syncWebullNow           = syncWebullNow;
         window.loadProfileSettings     = loadProfileSettings;

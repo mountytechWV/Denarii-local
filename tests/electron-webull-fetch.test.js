@@ -123,7 +123,7 @@ test('429: back off 5 s, then 30 s, then "Webull is busy"', async (t) => {
 
 test('401, 403, 5xx, network errors and the 8 s timeout map to fixed messages', async (t) => {
   const cases = [
-    [401, 'needs_approval', 'Your Webull approval expired. Tap Send new code.', 'needs_approval'],
+    [401, 'needs_approval', 'Your Webull approval expired. Tap Re-approve Webull.', 'needs_approval'],
     [403, 'error', "Your Webull key can't read accounts. Check that Trading is enabled.", 'unknown'],
     [502, 'error', 'Webull is unavailable.', null],
   ];
