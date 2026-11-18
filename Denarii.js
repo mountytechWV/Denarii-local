@@ -8102,6 +8102,56 @@
             const assetType = document.getElementById('asset-type').value;
             const row = document.getElementById('option-fields-row');
             if (row) row.style.display = assetType === 'option' ? '' : 'none';
+            // Side follows Buy/Sell for an option, so it is read-only there.
+            // Display only: this runs on load paths and never sets Side.
+            const side = document.getElementById('trade-type');
+            if (side) side.disabled = assetType === 'option';
+            _showOptionSideHint('option-side-hint', 'asset-type', 'option-action', 'trade-type');
+        }
+
+        // Option trades: Buy = Long, Sell = Short.
+        function _optionSideFor(action) {
+            return action === 'sell' ? 'short' : 'long';
+        }
+
+        // Shows the hint when an option's Side and Buy/Sell disagree (a trade
+        // saved before Side followed Buy/Sell). Never changes either value.
+        function _showOptionSideHint(hintId, assetId, actionId, sideId) {
+            var hint = document.getElementById(hintId);
+            if (!hint) return;
+            var asset  = (document.getElementById(assetId)  || {}).value;
+            var action = (document.getElementById(actionId) || {}).value;
+            var side   = (document.getElementById(sideId)   || {}).value;
+            hint.style.display = (asset === 'option' && action && side && _optionSideFor(action) !== side) ? '' : 'none';
+            // The fix link needs an editable Buy/Sell (Reflection: after Unlock Fields).
+            var locked = !!(document.getElementById(actionId) || {}).disabled;
+            var link = hint.querySelector('a');
+            if (link) link.style.display = locked ? 'none' : '';
+            var lockedText = hint.querySelector('[data-locked-text]');
+            if (lockedText) lockedText.style.display = locked ? '' : 'none';
+        }
+
+        // Hint link: the user asked to set Side from the current Buy/Sell.
+        // Sent as a change on Buy/Sell so the form's own sync, draft and
+        // autosave run exactly as for a picked value.
+        window._fixOptionSide = function(actionId) {
+            var el = document.getElementById(actionId);
+            if (el && !el.disabled) el.dispatchEvent(new Event('change', { bubbles: true }));
+            return false;
+        };
+
+        // New Trade: user changed Buy/Sell or Asset Type. The change event
+        // still reaches the form listener afterwards, which saves the draft.
+        function ntSyncOptionSide() {
+            var side = document.getElementById('trade-type');
+            if (side && document.getElementById('asset-type').value === 'option') {
+                var want = _optionSideFor(document.getElementById('option-action').value);
+                if (side.value !== want) {
+                    side.value = want;
+                    _recalcNewMetrics();
+                }
+            }
+            toggleOptionFields();
         }
 
         // ========== JOURNAL PAGE ==========
@@ -9601,6 +9651,7 @@
             { key: 'exitTime',   label: 'Date',           sortField: 'exitTime',   defaultOn: true },
             { key: 'symbol',     label: 'Symbol',         sortField: 'symbol',     defaultOn: true },
             { key: 'assetType',  label: 'Type',           sortField: 'assetType',  defaultOn: true },
+            { key: 'optionType', label: 'Option Type',    sortField: 'optionType', defaultOn: false },
             { key: 'type',       label: 'Side',           sortField: 'type',       defaultOn: true },
             { key: 'quantity',   label: 'Qty',            sortField: 'quantity',   defaultOn: true },
             { key: 'entryPrice', label: 'Entry',          sortField: 'entryPrice', defaultOn: true },
@@ -9662,6 +9713,14 @@
 
         function _dashIsColVisible(key) {
             return _dashVisibleCols.has(key);
+        }
+
+        // Option Type column: 'Call' / 'Put' for an option trade, '' otherwise
+        // (the cell shows an em dash; sorting puts blanks last).
+        function _dashOptionTypeLabel(t) {
+            if (getAssetType(t) !== 'option') return '';
+            var ot = String(t.optionType || '').toUpperCase();
+            return ot === 'CALL' ? 'Call' : ot === 'PUT' ? 'Put' : '';
         }
 
         // Broker-account display names for the Account column (cell + sort).
@@ -9960,7 +10019,7 @@
                 _dashSortDir = _dashSortDir === 'asc' ? 'desc' : 'asc';
             } else {
                 _dashSortField = field;
-                _dashSortDir = (field === 'symbol' || field === 'assetType' || field === 'type' || field === 'setupType') ? 'asc' : 'desc';
+                _dashSortDir = (field === 'symbol' || field === 'assetType' || field === 'optionType' || field === 'type' || field === 'setupType') ? 'asc' : 'desc';
             }
             // Cloud: reset to page 1 on sort change (dirty set below via filter detection)
             if (_cloudDashActive()) { _cloudDash.page = 1; _cloudDashDirty = true; }
@@ -10426,6 +10485,10 @@
                     switch (_sf) {
                         case 'symbol':    va = (a.symbol||'').toLowerCase(); vb = (b.symbol||'').toLowerCase(); return _sd === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
                         case 'assetType': va = getAssetType(a); vb = getAssetType(b); return _sd === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+                        case 'optionType':
+                            va = _dashOptionTypeLabel(a); vb = _dashOptionTypeLabel(b);
+                            if (!va || !vb) return (va ? 0 : 1) - (vb ? 0 : 1);
+                            return _sd === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
                         case 'type':      va = (a.type||a.direction||''); vb = (b.type||b.direction||''); return _sd === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
                         case 'setupType': va = (a.setupType||'').toLowerCase(); vb = (b.setupType||'').toLowerCase(); return _sd === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
                         case 'broker':    va = _dashBrokerName(a, _sortBrokerMap).toLowerCase(); vb = _dashBrokerName(b, _sortBrokerMap).toLowerCase(); return _sd === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
@@ -10502,6 +10565,9 @@
                                 break;
                             case 'assetType':
                                 tbl += '<td><span class="asset-badge ' + getAssetType(t) + '">' + getAssetTypeLabel(t) + '</span></td>';
+                                break;
+                            case 'optionType':
+                                tbl += '<td>' + (_dashOptionTypeLabel(t) || '—') + '</td>';
                                 break;
                             case 'type':
                                 // Cloud page rows (_mapSupabaseTradeRow) carry direction, not type.

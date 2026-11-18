@@ -706,6 +706,44 @@ test('Webull save: a draft side / asset type is ignored on reopen and on save', 
     assert.equal(s.notes, '<p>draft note</p>');
 });
 
+function webullOption(extra) {
+    return webullTrade(Object.assign({ assetType: 'option', optionType: 'PUT', strike: 5, expiry: '2026-11-20',
+        exitPrice: 0.9, entryPrice: 1, grossPnl: 20, pnl: 20 }, extra || {}));
+}
+
+test('Webull option save: Buy/Sell shows Side\'s value and is never written', async () => {
+    const h = reopenHarness(webullOption(), null);
+    assert.equal(h.$('jnl-option-action').value, 'sell');   // direction short
+    await h.fns._jnlCommitTrade({ explicit: true });
+    const s = h.saves[0];
+    assert.equal('optionAction' in s, false);
+    assert.equal(s.type, 'short');
+    assert.equal(s.optionType, 'PUT');
+    assert.equal(s.pnl, 20);
+});
+
+test('Webull option save: a stored Buy/Sell is not overwritten by the dropdown', async () => {
+    const h = reopenHarness(webullOption({ optionAction: 'buy' }), null);
+    assert.equal(h.$('jnl-option-action').value, 'sell');   // Side wins on display
+    h.$('jnl-option-action').value = 'sell';
+    await h.fns._jnlCommitTrade({ explicit: true });
+    assert.equal(h.saves[0].optionAction, 'buy');
+});
+
+test('manual option save: a missing Buy/Sell is written only when the user changes it', async () => {
+    const t = filledTrade();
+    delete t.fills;
+    Object.assign(t, { assetType: 'option', optionType: 'CALL', strike: 10, expiry: '2026-11-20' });
+    let h = reopenHarness(clone(t), null);
+    assert.equal(h.$('jnl-option-action').value, 'buy');    // implied by Side long
+    await h.fns._jnlCommitTrade({ explicit: true });
+    assert.equal('optionAction' in h.saves[0], false);
+    h = reopenHarness(clone(t), null);
+    h.$('jnl-option-action').value = 'sell';
+    await h.fns._jnlCommitTrade({ explicit: true });
+    assert.equal(h.saves[0].optionAction, 'sell');
+});
+
 test('manual save: Side and Asset Type from the dropdowns still save (unchanged)', async () => {
     const t = filledTrade();
     delete t.fills;

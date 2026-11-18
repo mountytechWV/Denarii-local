@@ -331,7 +331,14 @@
         trade.setupType      = document.getElementById('jnl-setup-type').value;
 
         if (trade.assetType === 'option') {
-            trade.optionAction = document.getElementById('jnl-option-action').value;
+            // Webull: Buy/Sell is never written (it is locked and Side comes
+            // from Webull). Otherwise a saved value is kept in step with the
+            // dropdown, and a missing one is written only once the user
+            // changes Buy/Sell, so a save never stamps the displayed value.
+            var _optAct = document.getElementById('jnl-option-action').value;
+            if (!_isWebull && (trade.optionAction || _optAct !== _jnlLoadedOptionAction)) {
+                trade.optionAction = _optAct;
+            }
             trade.optionType   = document.getElementById('jnl-option-type').value;
             trade.strike       = parseFloat(document.getElementById('jnl-strike').value) || 0;
             trade.expiry       = document.getElementById('jnl-expiry').value || null;
@@ -591,6 +598,50 @@
         if (row) row.style.display = val === 'option' ? '' : 'none';
     }
 
+    // ── Option Side sync (Buy = Long, Sell = Short) ──────────────────────────
+    // Runs only from the Buy/Sell and Asset Type change handlers, never on
+    // load. A Webull trade keeps the Side Webull gave it (the save ignores the
+    // Side dropdown), so it is not synced.
+
+    // Buy/Sell as loaded; a trade saved without one gets it written only
+    // when the user changes it.
+    var _jnlLoadedOptionAction = null;
+
+    function _jnlSelectedTrade() {
+        return journalData.trades.find(function(t) { return String(t.id) === String(window._jnlSelectedTradeId); });
+    }
+
+    function _jnlUpdateOptionSideHint() {
+        var hint = document.getElementById('jnl-option-side-hint');
+        if (!hint) return;
+        if (_jnlIsWebull(_jnlSelectedTrade())) { hint.style.display = 'none'; return; }
+        _showOptionSideHint('jnl-option-side-hint', 'jnl-asset-type', 'jnl-option-action', 'jnl-trade-type');
+    }
+
+    // Side is read-only for an option once fields are unlocked; for any
+    // other asset type it is editable again after Unlock Fields.
+    function _jnlApplySideLock() {
+        var side = document.getElementById('jnl-trade-type');
+        var unlockBtn = document.getElementById('jnl-unlock-btn');
+        var unlocked = !!(unlockBtn && unlockBtn.disabled);
+        var isOption = (document.getElementById('jnl-asset-type') || {}).value === 'option';
+        if (side && !_jnlIsWebull(_jnlSelectedTrade())) side.disabled = isOption || !unlocked;
+        _jnlUpdateOptionSideHint();
+    }
+
+    function _jnlSyncOptionSide() {
+        if (_jnlIsWebull(_jnlSelectedTrade())) return;
+        var side = document.getElementById('jnl-trade-type');
+        if (side && (document.getElementById('jnl-asset-type') || {}).value === 'option') {
+            var want = _optionSideFor(document.getElementById('jnl-option-action').value);
+            if (side.value !== want) {
+                side.value = want;
+                _jnlRecalcMetrics();
+            }
+        }
+        _jnlApplySideLock();
+    }
+
     // ── Page init / filter ────────────────────────────────────────────────────
 
     function initJournalPage() {
@@ -760,13 +811,14 @@
         // Both stay locked.
         var hasFills = !!trade && Array.isArray(trade.fills) && trade.fills.length >= 1;
         if (trade && (isWebull || hasFills || document.getElementById('jnl-fills-rows'))) {
-            _JNL_EXEC_IDS.concat(isWebull ? ['jnl-trade-type', 'jnl-asset-type'] : []).forEach(function(id) {
+            _JNL_EXEC_IDS.concat(isWebull ? ['jnl-trade-type', 'jnl-asset-type', 'jnl-option-action'] : []).forEach(function(id) {
                 var el = document.getElementById(id);
                 if (el) el.disabled = true;
             });
         }
         var btn = document.getElementById('jnl-unlock-btn');
         if (btn) { btn.textContent = '🔓 Unlocked'; btn.disabled = true; }
+        _jnlApplySideLock();
         var hint = document.getElementById('jnl-lock-hint');
         if (hint) hint.style.display = 'none';
         // A closed manual trade without fills: show "Use Multiple Fills".
@@ -842,8 +894,15 @@
 
         // Option fields
         _jnlToggleOptionFields();
+        // Buy/Sell shows the saved value; with none saved (Webull and
+        // broker imports never set it) it shows the one Side implies. A
+        // Webull trade always shows Side's, since Webull sets Side. Display
+        // only: nothing is written until the user changes Buy/Sell.
+        var _actSide = (trade.type || trade.direction) === 'short' ? 'sell' : 'buy';
+        document.getElementById('jnl-option-action').value =
+            (!_jnlIsWebull(trade) && trade.optionAction) ? trade.optionAction : _actSide;
+        _jnlLoadedOptionAction = document.getElementById('jnl-option-action').value;
         if (trade.assetType === 'option') {
-            document.getElementById('jnl-option-action').value = trade.optionAction || 'buy';
             document.getElementById('jnl-option-type').value   = trade.optionType || 'CALL';
             document.getElementById('jnl-strike').value        = trade.strike ?? '';
             document.getElementById('jnl-expiry').value        = trade.expiry || '';
@@ -913,7 +972,7 @@
                 // execution fields, side and asset type) come from the trade,
                 // never the draft, so they always match the fill rows.
                 var _draftSkip = (_jnlIsWebull(trade) || (Array.isArray(trade.fills) && trade.fills.length >= 1))
-                    ? _JNL_EXEC_IDS.concat(_jnlIsWebull(trade) ? ['jnl-trade-type', 'jnl-asset-type'] : [])
+                    ? _JNL_EXEC_IDS.concat(_jnlIsWebull(trade) ? ['jnl-trade-type', 'jnl-asset-type', 'jnl-option-action'] : [])
                     : [];
                 Object.keys(_draft.core).forEach(function(id) {
                     if (_draftSkip.indexOf(id) >= 0) return;
@@ -926,6 +985,7 @@
                 _jnlToggleOptionFields();
             }
         }
+        _jnlUpdateOptionSideHint();
 
         // Attach input listener once: synchronously back up every keystroke
         // across the whole protected form (not just notes).
@@ -2179,6 +2239,7 @@
     window._jnlOnCategoryChange   = _jnlOnCategoryChange;
     window._jnlSelectGrade        = _jnlSelectGrade;
     window._jnlToggleOptionFields = _jnlToggleOptionFields;
+    window._jnlSyncOptionSide     = _jnlSyncOptionSide;
     window._jnlRecalcMetrics      = _jnlRecalcMetrics;
     window._jnlLoadStrategyRules  = _jnlLoadStrategyRules;
     window._jnlUpdateRuleScore    = _jnlUpdateRuleScore;

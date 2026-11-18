@@ -755,7 +755,7 @@
                                 </select>
                             </div>
                             <div class="form-group"><label>Asset Type</label>
-                                <select id="asset-type" onchange="toggleOptionFields()">
+                                <select id="asset-type" onchange="ntSyncOptionSide()">
                                     <option value="stock">Stock</option>
                                     <option value="option">Option</option>
                                     <option value="future">Future</option>
@@ -772,10 +772,11 @@
                         <!-- Row 2 (option only): option-specific fields -->
                         <div class="form-grid tf-4col-grid" id="option-fields-row" style="display:none;">
                             <div class="form-group"><label>Buy / Sell</label>
-                                <select id="option-action">
+                                <select id="option-action" onchange="ntSyncOptionSide()">
                                     <option value="buy">Buy</option>
                                     <option value="sell">Sell</option>
                                 </select>
+                                <small id="option-side-hint" class="field-hint" style="display:none;">Side and Buy/Sell disagree. <a href="#" onclick="return _fixOptionSide('option-action')">Set Side from Buy/Sell</a></small>
                             </div>
                             <div class="form-group"><label>Option Type</label>
                                 <select id="option-type-input">
@@ -977,7 +978,7 @@
                                 <select id="jnl-broker-account" disabled class="jnl-locked-field"><option value="">No account</option></select>
                             </div>
                             <div class="form-group"><label>Asset Type</label>
-                                <select id="jnl-asset-type" disabled class="jnl-locked-field" onchange="_jnlToggleOptionFields()">
+                                <select id="jnl-asset-type" disabled class="jnl-locked-field" onchange="_jnlToggleOptionFields(); _jnlSyncOptionSide()">
                                     <option value="stock">Stock</option>
                                     <option value="option">Option</option>
                                     <option value="future">Future</option>
@@ -999,10 +1000,11 @@
                         <!-- Option fields (conditional) -->
                         <div class="form-grid tf-4col-grid" id="jnl-option-fields-row" style="display:none;">
                             <div class="form-group"><label>Buy / Sell</label>
-                                <select id="jnl-option-action" disabled class="jnl-locked-field">
+                                <select id="jnl-option-action" disabled class="jnl-locked-field" onchange="_jnlSyncOptionSide()">
                                     <option value="buy">Buy</option>
                                     <option value="sell">Sell</option>
                                 </select>
+                                <small id="jnl-option-side-hint" class="field-hint" style="display:none;">Side and Buy/Sell disagree. <span data-locked-text>Unlock Fields to fix.</span><a href="#" onclick="return _fixOptionSide('jnl-option-action')">Set Side from Buy/Sell</a></small>
                             </div>
                             <div class="form-group"><label>Option Type</label>
                                 <select id="jnl-option-type" disabled class="jnl-locked-field">
@@ -2765,7 +2767,7 @@ Analyze this trader's data and identify their top 3 behavioral patterns negative
     <script src="js/shared/prompt-modal.js?v=2" defer></script>
     <script src="js/shared/filter-bar.js?v=7" defer></script>
     <script src="js/shared/ticker-badge.js?v=1" defer></script>
-    <script src="Denarii.js?v=83" defer></script>
+    <script src="Denarii.js?v=84" defer></script>
     <script src="js/services/webull-sync.js?v=6" defer></script>
     <script src="js/legal-bundle.js" defer></script>
     <script src="js/auth.js?v=48" defer></script>
@@ -2814,7 +2816,7 @@ Analyze this trader's data and identify their top 3 behavioral patterns negative
     <script src="js/pages/stock-chart.js?v=4" defer></script>
     <script src="js/pages/settings.js?v=13" defer></script>
     <script src="js/shared/editor-toolbar.js?v=1" defer></script>
-    <script src="js/pages/journal.js?v=28" defer></script>
+    <script src="js/pages/journal.js?v=29" defer></script>
     <script src="js/pages/broker-accounts.js?v=21" defer></script>
     <script src="js/pages/reviews.js?v=9" defer></script>
     <script src="js/pages/daily-planner.js?v=6" defer></script>
