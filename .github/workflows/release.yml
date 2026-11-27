@@ -67,11 +67,38 @@ jobs:
       - name: Check Webull read-only rules
         run: npm run check:webull
 
+      - name: Mark as an official build
+        # build-info.json is packaged with the app (package.json build.files).
+        # electron/updater.js only checks for updates when it is present,
+        # official is true and repo matches the publish owner/repo. Forks and
+        # local builds never get it, so they never auto-update.
+        if: github.repository == 'mountytechWV/Denarii-local'
+        shell: bash
+        run: |
+          if [ "$GITHUB_ACTIONS" != "true" ] || [ "$GITHUB_REPOSITORY" != "mountytechWV/Denarii-local" ]; then
+            echo "::error::Not the official repository; refusing to write build-info.json"
+            exit 1
+          fi
+          node -e "require('fs').writeFileSync('build-info.json', JSON.stringify({ official: true, repo: process.env.GITHUB_REPOSITORY, commit: process.env.GITHUB_SHA }, null, 2) + '\n')"
+          cat build-info.json
+
       - name: Build installer
         # --publish never: electron-builder only builds. It still writes
         # latest.yml from the publish config in package.json; uploading is
         # done by the release job below.
         run: npx electron-builder --win nsis --x64 --publish never
+
+      - name: Check build-info.json is in the package
+        if: github.repository == 'mountytechWV/Denarii-local'
+        shell: bash
+        run: |
+          node -e "
+            const asar = require('@electron/asar');
+            const file = 'dist/win-unpacked/resources/app.asar';
+            const info = JSON.parse(asar.extractFile(file, 'build-info.json').toString('utf8'));
+            if (info.official !== true || info.repo !== process.env.GITHUB_REPOSITORY) throw new Error('bad build-info.json');
+            console.log('build-info.json packaged:', JSON.stringify(info));
+          "
 
       # ------------------------------------------------------------------
       # Future: SignPath code signing (after SignPath Foundation approval).

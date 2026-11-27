@@ -19,3 +19,6 @@ uploads/
 
 
 .claude/settings.local.json
+
+# Written by the release workflow for official builds only
+build-info.json

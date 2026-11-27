@@ -77,7 +77,7 @@ npm run dist       # build the Windows installer into dist/
 
 ## Make it your own
 
-Denarii is open source, so you can change it for yourself with the help of an AI coding tool, even if you're not a programmer. [docs/MAKING-CHANGES.md](docs/MAKING-CHANGES.md) explains what you need, the general steps, and what to watch out for (back up your data first, and point the updater at your own fork).
+Denarii is open source, so you can change it for yourself with the help of an AI coding tool, even if you're not a programmer. [docs/MAKING-CHANGES.md](docs/MAKING-CHANGES.md) explains what you need, the general steps, and what to watch out for (back up your data first). Custom builds don't auto-update; only official releases do.
 
 ## Support
 

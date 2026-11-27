@@ -28,7 +28,11 @@ Your real journal lives in `%APPDATA%\Denarii`. A version you run with `npm star
 
 ## Before you build your own installer
 
-Denarii updates itself from GitHub. In `package.json`, the `publish` section names the repository it checks for updates. Change its `owner` and `repo` to your own fork, or remove the `publish` section. **If you don't, Denarii's automatic updater will replace your custom version with the official release.**
+**Custom builds never auto-update.** Only installers built by the official release workflow on GitHub contain the marker file (`build-info.json`) that turns automatic updates on. An installer you build yourself with `npm run dist`, or one built from a fork, never downloads or installs updates, so the official release can't replace your changes.
+
+To get later official changes, merge them from the original repository into your fork with Git (add https://github.com/mountytechWV/Denarii-local as an `upstream` remote, fetch it and merge; your AI tool can help with this and with any conflicts), then test and build your installer again.
+
+If you want your version installed separately from the official Denarii, with its own data folder, change `productName` (it appears twice: at the top and in the `build` section) and `appId` in `package.json` (for example `Denarii Custom` and `com.yourname.denarii-custom`). The data folder name is also set in `electron/main.js` (`app.setName('Denarii')` and the `userData` path next to it); change `Denarii` there too, or both versions will share the same journal. Your version then starts with an empty journal. To bring your data across, back it up first and copy the contents of `%APPDATA%\Denarii` into your version's new folder under `%APPDATA%` before you start it the first time.
 
 ## Sharing your version
 

@@ -55,7 +55,8 @@
       "img/**",
       "js/**",
       "vendor/**",
-      "electron/**"
+      "electron/**",
+      "build-info.json"
     ],
     "win": {
       "target": [

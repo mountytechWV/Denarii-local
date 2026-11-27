@@ -12,6 +12,9 @@ const { startUpdater, READY, INSTALL, FIRST_CHECK_MS, CHECK_EVERY_MS } = require
 
 const isAppUrl = url => url === 'app://denarii' || url.startsWith('app://denarii/');
 const APP_EVENT = { senderFrame: { url: 'app://denarii/index.html' } };
+const pkg = require('../package.json');
+const PUBLISH_REPO = pkg.build.publish[0].owner + '/' + pkg.build.publish[0].repo;
+const OFFICIAL = { official: true, repo: PUBLISH_REPO, commit: 'abc123' };
 
 function fakeAutoUpdater(checkResult) {
   const u = new EventEmitter();
@@ -49,6 +52,8 @@ function setup(opts) {
   const logs = [];
   const updater = quietly(logs, () => startUpdater({
     app, ipcMain, isAppUrl, autoUpdater,
+    buildInfo: 'buildInfo' in o ? o.buildInfo : OFFICIAL,
+    publishRepo: 'publishRepo' in o ? o.publishRepo : PUBLISH_REPO,
     getWindow: () => win,
     setTimeout: (fn, ms) => timers.timeouts.push([fn, ms]),
     setInterval: (fn, ms) => timers.intervals.push([fn, ms]),
@@ -67,6 +72,92 @@ test('skipped entirely when the app is not packaged (npm start)', () => {
   assert.equal(env.autoUpdater.listenerCount('error'), 0);
   assert.equal(env.autoUpdater.autoDownload, undefined);
   assert.equal(env.app.listenerCount('will-quit'), 0);
+});
+
+// Skipped builds: nothing registered, no timers, no update calls, one log line.
+function assertSkipped(env, pattern) {
+  assert.equal(env.updater, null);
+  assert.deepEqual(Object.keys(env.handlers), []);
+  assert.equal(env.timers.timeouts.length + env.timers.intervals.length, 0);
+  assert.equal(env.autoUpdater.listenerCount('error'), 0);
+  assert.equal(env.autoUpdater.autoDownload, undefined);
+  assert.equal(env.autoUpdater.checks, 0);
+  assert.equal(env.app.listenerCount('will-quit'), 0);
+  assert.equal(env.logs.length, 1, env.logs.join('\n'));
+  assert.match(env.logs[0], /automatic updates are off/);
+  assert.match(env.logs[0], pattern);
+  assert.ok(!/error/i.test(env.logs[0]));
+}
+
+test('publish repo used by the tests is the official one', () => {
+  assert.equal(PUBLISH_REPO, 'mountytechWV/Denarii-local');
+});
+
+test('not packaged: skipped even with an official marker', () => {
+  assertSkipped(setup({ packaged: false }), /not packaged/);
+});
+
+test('no build-info.json (local npm run dist, forks): skipped', () => {
+  assertSkipped(setup({ buildInfo: null }), /no build-info\.json/);
+});
+
+test('official false or missing: skipped', () => {
+  for (const buildInfo of [
+    { official: false, repo: PUBLISH_REPO },
+    { official: 'true', repo: PUBLISH_REPO },
+    { repo: PUBLISH_REPO },
+  ]) {
+    assertSkipped(setup({ buildInfo }), /not an official build/);
+  }
+});
+
+test('marker repo does not match the publish repo: skipped', () => {
+  for (const buildInfo of [
+    { official: true, repo: 'someone/Denarii-local' },
+    { official: true, repo: 'mountytechWV/Denarii-local-archive' },
+    { official: true },
+  ]) {
+    assertSkipped(setup({ buildInfo }), /does not match/);
+  }
+  // A fork that points publish at itself but kept an official-looking marker.
+  assertSkipped(setup({ publishRepo: 'someone/Denarii-local' }), /does not match/);
+  assertSkipped(setup({ publishRepo: null }), /no publish repository/);
+});
+
+test('official marker with the matching repo: updater runs', () => {
+  const env = setup({ buildInfo: { official: true, repo: 'MountyTechWV/denarii-LOCAL', commit: 'x' } });
+  assert.ok(env.updater);
+  assert.ok(env.handlers[INSTALL]);
+  assert.equal(env.timers.timeouts.length, 1);
+  env.timers.timeouts[0][0]();
+  assert.equal(env.autoUpdater.checks, 1);
+  assert.ok(!env.logs.some(l => /updates are off/.test(l)));
+});
+
+test('reads build-info.json from the app root', () => {
+  const os = require('node:os');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'denarii-updater-'));
+  try {
+    const run = () => {
+      const app = new EventEmitter();
+      app.isPackaged = true;
+      app.getAppPath = () => dir;
+      const logs = [];
+      const u = fakeAutoUpdater(Promise.resolve(null));
+      const r = quietly(logs, () => startUpdater({
+        app, ipcMain: { handle() {} }, isAppUrl, autoUpdater: u, publishRepo: PUBLISH_REPO,
+        getWindow: () => null, setTimeout() {}, setInterval() {},
+      }));
+      return { r, logs };
+    };
+    assert.equal(run().r, null);
+    fs.writeFileSync(path.join(dir, 'build-info.json'), '{not json');
+    assert.equal(run().r, null);
+    fs.writeFileSync(path.join(dir, 'build-info.json'), JSON.stringify(OFFICIAL));
+    assert.ok(run().r);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('configured per plan; first check after 30 s, then every 4 hours', () => {
