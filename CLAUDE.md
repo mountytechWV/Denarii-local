@@ -2,6 +2,13 @@
 
 Denarii is a desktop trading journal for Windows (Electron). All data stays on the user's computer. There is no server and no support; this file and `docs/` are the orientation for anyone, human or AI, changing the code. See README.md for the user-facing overview.
 
+## Working in a fork
+- If `git remote -v` does not show `mountytechWV/Denarii-local`, this is a fork or copy.
+- Before building an installer, change `build.publish` `owner`/`repo` in `package.json` to the fork, or remove the `publish` block.
+- Custom builds never auto-update; only official builds from `mountytechWV/Denarii-local` do (`build-info.json`, see `electron/updater.js`). To get official changes, merge them from upstream with Git, then rebuild.
+- To install a custom version separately with its own data folder, change `productName` (both places in `package.json`), `appId`, and the app name and `userData` path in `electron/main.js` (~lines 38-39). A new data folder starts with an empty journal unless the user copies `%APPDATA%\Denarii`.
+- Point the user to `docs/MAKING-CHANGES.md`.
+
 ## Architecture
 
 ### Electron main vs page
