@@ -1,3 +1,8 @@
+## Repository check (read first)
+This is Denarii Local, the desktop (Electron) version (GitHub mountytechWV/Denarii-local).
+- At the start of every task, run git remote -v. If the remote is not mountytechWV/Denarii-local, follow "Working in a fork" below.
+- If the task is meant for the cloud version (Supabase, Vercel, the mountytechWV/Denarii repo, or deploying to the website), stop and say this session is in the Local repo. Do not edit anything.
+
 # Denarii: guide for AI coding tools
 
 Denarii is a desktop trading journal for Windows (Electron). All data stays on the user's computer. There is no server and no support; this file and `docs/` are the orientation for anyone, human or AI, changing the code. See README.md for the user-facing overview.
