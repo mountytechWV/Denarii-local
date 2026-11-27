@@ -5,6 +5,6 @@
     "order": 4,
     "url": "https://github.com/mountytechWV/Denarii-local/releases/latest",
     "buttonText": "Download",
-    "description": "A trading journal and analytics app. Log your trades, build your own strategies with rule checklists in the Strategy Editor, and see which setups actually work for you.\nRuns on your own computer, so your trade data stays private.\nCompatible with Windows PC only."
+    "description": "A trading journal and analytics app. Log your trades, build your own strategies with rule checklists in the Strategy Editor, and see which setups actually work for you.\nRuns on your own computer, so your trade data stays private.\nCompatible with Windows PC only.\nFirst install: if Windows shows \"Windows protected your PC\", click More info, then Run anyway. Install steps are on the download page."
   }
 }

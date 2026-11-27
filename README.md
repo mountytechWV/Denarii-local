@@ -7,12 +7,21 @@ It is a desktop app built with Electron. Everything runs and is stored on your o
 ## Installing on Windows
 
 1. Open the [latest release](https://github.com/mountytechWV/Denarii-local/releases/latest) and download `Denarii-Setup-<version>.exe` under **Assets**.
-2. If your browser warns that the file isn't commonly downloaded, choose **Keep**.
-3. Run the installer. If Windows shows "Windows protected your PC", click **More info**, then **Run anyway**.
+2. If your browser warns that the file isn't commonly downloaded, choose **Keep** (you may need to click **Show more** first).
+3. Run the installer. If Windows shows "Windows protected your PC", click **More info** (the small link under the message), check that the app is `Denarii-Setup-<version>.exe`, then click **Run anyway**.
    - Alternative: right-click the installer, choose **Properties**, check **Unblock**, click **OK**, then run it.
 4. Accept the license, choose a folder, and finish. Denarii starts when the installer closes.
 
-The warnings appear because the installer is not code-signed yet (see [CODE_SIGNING.md](CODE_SIGNING.md)). They only appear on the first install: after that, updates install from inside the app. Do not turn off SmartScreen.
+### Why you see security warnings
+
+Denarii is not code-signed by a registered publisher yet (see [CODE_SIGNING.md](CODE_SIGNING.md)), so Windows lists it as "Unknown publisher". Windows and many antivirus programs warn about any app like that, especially new ones that few people have downloaded. The warning does not mean a threat was found in the file.
+
+- **Microsoft Defender SmartScreen** shows "Windows protected your PC". Use **More info**, then **Run anyway**, as in step 3.
+- **McAfee, Norton, Avast, AVG, Bitdefender or other antivirus** may block the installer or move it to quarantine. Open your antivirus, find `Denarii-Setup` in its blocked items or quarantine history, and choose **Restore** or **Allow**. The exact wording differs between programs.
+- Only allow a file you downloaded from this repository's Releases page. Don't turn off SmartScreen or your antivirus.
+- To check the file is the one published here, compare its SHA-256 with the `sha256` shown next to it under **Assets**. In PowerShell: `Get-FileHash .\Denarii-Setup-<version>.exe`
+
+These warnings only appear on the first install. After that, updates install from inside the app.
 
 ## Your data
 

@@ -147,9 +147,32 @@ jobs:
             fi
             gh release upload "$TAG" "${files[@]}" --clobber
           else
+            # Draft notes: install help for first-time users. Add the
+            # changes for this version above it before publishing.
+            cat > release-notes.md <<'NOTES'
+          Denarii @VERSION@
+
+          Already installed? Denarii offers the update automatically. Back up first from Settings > Data.
+
+          ## New install
+
+          1. Download **Denarii-Setup-@VERSION@.exe** under **Assets** below. If your browser says the file isn't commonly downloaded, choose **Keep**.
+          2. Run it. If Windows shows **"Windows protected your PC"**, click **More info** (the small link under the message), then **Run anyway**.
+
+          ### Why the warning appears
+
+          Denarii isn't code-signed by a registered publisher yet, so Windows lists it as "Unknown publisher". Windows and many antivirus programs warn about any app like that. The warning does not mean a threat was found.
+
+          - **McAfee, Norton, Avast, Bitdefender or other antivirus** may block the installer or quarantine it. Open your antivirus, find Denarii-Setup in its blocked items or quarantine, and choose **Restore** or **Allow**.
+          - Only do this for a file downloaded from this page, and don't turn your antivirus off.
+          - You only see these warnings on the first install. Updates install from inside the app.
+
+          Full install steps are in the [README](https://github.com/mountytechWV/Denarii-local#installing-on-windows).
+          NOTES
+            sed -i "s/@VERSION@/$VERSION/g" release-notes.md
             gh release create "$TAG" "${files[@]}" \
               --draft \
               --verify-tag \
               --title "Denarii $VERSION" \
-              --notes "Download Denarii-Setup-$VERSION.exe under Assets. See the README for install steps."
+              --notes-file release-notes.md
           fi
